@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"strings"
 )
 
@@ -42,7 +41,7 @@ func (g *LRGen) Run() {
 	augment := g.pr.NewProd(dollar, []*Symbol{dollar, dollar})
 	g.parse()
 	if len(g.pr.All) <= 1 {
-		log.Fatal("no rules defined")
+		g.Fatal("no rules defined")
 	}
 	augment.Rhs[0] = g.pr.All[1].Lhs
 	g.GenAll()
