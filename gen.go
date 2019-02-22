@@ -139,30 +139,34 @@ var $$Debug = 0 // debug info from parser
 
 // ParseToken runs the state machine for a single token.
 // Returns true if no error occurs.
-func ($$p *$$Parser) ParseToken($$major int, $$minor interface{}) bool {
-	if $$Debug > 0 {
-		println("In state", $$p.state)
+func ($$ *$$Parser) ParseToken($$major int, $$minor interface{}) bool {
+	if $$Debug >= 1 {
+		println("In state", $$.state)
 		if $$Debug >= 2 {
 			println("\tINPUT token", $$Name[$$major])
 		}
 	}
-	for $$major >= 0 {
+	for {
 		var $$Val interface{}
 		// look up shift or reduce
-		$$n := int($$Pact[$$p.state]) + $$major
-		if 0 <= $$n && $$n < len($$Action) &&
-			int($$Check[$$n]) == $$major {
+		$$n := int($$Pact[$$.state])
+		if $$major >= 0 {
+			$$n += $$major
+		} else if $$n < len($$Action) {
+			break // cannot decide without lookahead
+		}
+		if 0 <= $$n && $$n < len($$Action) && int($$Check[$$n]) == $$major {
 			$$n = int($$Action[$$n])
 		} else {
-			$$n = -int($$Reduce[$$p.state])
+			$$n = -int($$Reduce[$$.state])
 		}
 		switch {
 		case $$n > 0: // shift
 			if $$Debug >= 1 {
 				println("\tSHIFT token", $$Name[$$major])
 			}
-			if $$p.errSt > 0 {
-				$$p.errSt--
+			if $$.errSt > 0 {
+				$$.errSt--
 			}
 			$$Val = $$minor
 			$$major = -1
@@ -171,68 +175,68 @@ func ($$p *$$Parser) ParseToken($$major int, $$minor interface{}) bool {
 			if $$Debug >= 1 {
 				println("\tREDUCE rule", $$n)
 			}
-			$$t := len($$p.stack) - int($$R2[$$n])
-			$$D := $$p.stack[$$t:]
+			$$t := len($$.stack) - int($$R2[$$n])
+			$$D := $$.stack[$$t:]
 			if len($$D) > 0 { // pop items and restore state
-				$$p.state = $$p.stack[$$t].s
-				$$Val = $$p.stack[$$t].v
-				$$p.stack = $$p.stack[:$$t]
+				$$.state = $$.stack[$$t].s
+				$$Val = $$.stack[$$t].v
+				$$.stack = $$.stack[:$$t]
 			}
 			switch $$n { // Semantic actions`
 	const tmpl3 = `
 			}
 			// look up goto
 			$$t = int($$R1[$$n]) - $$Last
-			$$n = int($$Pgoto[$$t]) + $$p.state
+			$$n = int($$Pgoto[$$t]) + $$.state
 			if 0 <= $$n && $$n < len($$Action) &&
-				int($$Check[$$n]) == $$p.state {
+				int($$Check[$$n]) == $$.state {
 				$$n = int($$Action[$$n])
 			} else {
 				$$n = int($$Goto[$$t])
 			}
 		default:
-			if $$major == 0 && $$p.state == $$Accept {
+			if $$major == 0 && $$.state == $$Accept {
 				if $$Debug >= 1 {
 					println("\tACCEPT!")
 				}
 				return true
 			}
-			switch $$p.errSt {
+			switch $$.errSt {
 			case 0: // new error
 				if $$Debug >= 1 {
-					println("\tERROR!")
+					println("\tERROR! Unexpected", $$Name[yymajor])
 				}
 `
 	const tmpl4 = `
 				fallthrough
 			case 1, 2: // partially recovered error
 				for { // pop states until error can be shifted
-					$$n = int($$Pact[$$p.state]) + 1
+					$$n = int($$Pact[$$.state]) + 1
 					if 0 <= $$n && $$n < len($$Action) && $$Check[$$n] == 1 {
 						$$n = $$Action[$$n]
 						if $$n > 0 {
 							break
 						}
 					}
-					if len($$p.stack) == 0 {
+					if len($$.stack) == 0 {
 						if $$Debug >= 2 {
 							println("\tCannot shift error")
 						}
 						return false
 					}
 					if $$Debug >= 2 {
-						println("\tPopping state", $$p.state)
+						println("\tPopping state", $$.state)
 					}
-					$$p.state = $$p.stack[len($$p.stack)-1].s
-					$$p.stack = $$p.stack[:len($$p.stack)-1]
+					$$.state = $$.stack[len($$.stack)-1].s
+					$$.stack = $$.stack[:len($$.stack)-1]
 				}
-				$$p.errSt = 3
+				$$.errSt = 3
 				if $$Debug >= 2 {
 					println("\tSHIFT token error")
 				}
 				$$Val = nil
 			default: // still waiting for valid tokens
-				if $$Debug >= 2 {
+				if $$Debug >= 1 {
 					println("\tDISCARD token", $$Name[$$major])
 				}
 				return $$major != 0
@@ -241,8 +245,8 @@ func ($$p *$$Parser) ParseToken($$major int, $$minor interface{}) bool {
 		if $$Debug >= 2 {
 			println("\tGOTO state", $$n)
 		}
-		$$p.stack = append($$p.stack, $$Stack{$$p.state, $$Val})
-		$$p.state = $$n
+		$$.stack = append($$.stack, $$Stack{$$.state, $$Val})
+		$$.state = $$n
 	}
 	return true
 }
