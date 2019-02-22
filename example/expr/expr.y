@@ -6,14 +6,17 @@ import (
 	"io"
 	"math/big"
 	"os"
+	"strconv"
 )
 
 type lex struct {
 	*bufio.Reader
-	lookahead byte
+	filename  string
+	lineno    int
+	lookahead rune
 	major     int
 	minor     interface{}
-	text      []byte
+	text      []rune
 }
 
 const (
@@ -21,11 +24,11 @@ const (
 	Unknown = 2
 )
 
-func (l *lex) next() byte {
-	var c byte
+func (l *lex) next() rune {
+	var c rune
 	var err error
 	if l.lookahead == 0 {
-		c, err = l.ReadByte()
+		c, _, err = l.ReadRune()
 		if err == io.EOF {
 			c = Eof
 		} else if err != nil {
@@ -51,9 +54,9 @@ reinput:
 		l.major = PLUS
 	case '-':
 		l.major = MINUS
-	case '*':
+	case '*', '×':
 		l.major = TIMES
-	case '/':
+	case '/', '÷':
 		l.major = DIV
 	case '(':
 		l.major = LPAR
@@ -69,6 +72,7 @@ reinput:
 			l.major = Unknown
 		}
 	case '\n':
+		l.lineno++
 		l.major = NL
 	case ' ', '\t', '\r', '\f', '\v':
 		goto reinput
@@ -77,7 +81,7 @@ reinput:
 	}
 }
 
-func (l *lex) scanNum(c byte) {
+func (l *lex) scanNum(c rune) {
 	for {
 		if c = l.next(); '0' <= c && c <= '9' || c == '.' {
 			l.text = append(l.text, c)
@@ -89,16 +93,16 @@ func (l *lex) scanNum(c byte) {
 }
 
 func (l *lex) error(v ...interface{}) {
-	if len(l.text) > 0 {
-		fmt.Printf("near %q: ", l.text)
-	}
+	fmt.Printf("%s:%d: ", l.filename, l.lineno)
 	fmt.Println(v...)
 }
 
 func main() {
 	var p yyParser
-	yyDebug = 0
+	yyDebug = 1
 	p.Reader = bufio.NewReader(os.Stdin)
+	p.filename = "<stdin>"
+	p.lineno = 1
 	for {
 		p.getToken()
 		if !p.ParseToken(p.major, p.minor) || p.major == Eof {
@@ -119,28 +123,24 @@ func main() {
 
 %base lex
 %error {
-	yyp.lex.error("unexpected token", yyName[yymajor])
+	yy.error("syntax error near", strconv.Quote(string(yy.text)))
 }
 
 %%
 
 input:
 	/* epsilon */
-|	input line NL { yyp.ErrOk() }
-;
-
-line:
-	expr
+|	input expr NL
 	{
 		var s string
-		if $1.IsInt() {
-			s = $1.Num().String()
+		if $2.IsInt() {
+			s = $2.Num().String()
 		} else {
-			s = $1.String()
+			s = $2.String()
 		}
 		fmt.Println(s)
 	}
-|	error
+|	input error NL { yy.ErrOk() }
 ;
 
 expr:
