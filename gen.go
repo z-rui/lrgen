@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -280,17 +281,13 @@ func (g *LRGen) dumpSemant(w io.Writer) {
 			DOLLAR
 			NUM
 		)
-		var s []byte
-		var n int
-		endNum := func() {
-			n--
-			s = append(s, fmt.Sprintf("%sD[%d].v", g.Prefix, n)...)
-			if n < len(prod.Rhs) {
-				typ := prod.Rhs[n].Type
-				if typ != "" {
-					s = append(s, fmt.Sprintf(".(%s)", typ)...)
-				}
-			}
+		nRhs := len(prod.Rhs)
+		used := make([]bool, nRhs+1)
+		buf := &bytes.Buffer{}
+		var n int // the number after $
+		putDollar := func(i int) {
+			fmt.Fprintf(buf, "%sD%d", g.Prefix, i)
+			used[i] = true
 		}
 		for i := range prod.Semant {
 			ch := prod.Semant[i]
@@ -300,19 +297,19 @@ func (g *LRGen) dumpSemant(w io.Writer) {
 				case '$':
 					state = DOLLAR
 				default:
-					s = append(s, ch)
+					buf.WriteByte(ch)
 				}
 			case DOLLAR:
 				switch ch {
 				case '$':
-					s = append(s, g.Prefix...)
-					s = append(s, "Val"...)
+					putDollar(0)
 					state = OUT
 				case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 					n = int(ch - '0')
 					state = NUM
 				default:
-					s = append(s, '$', ch)
+					buf.WriteByte('$')
+					buf.WriteByte(ch)
 					state = OUT
 				}
 			case NUM:
@@ -321,19 +318,39 @@ func (g *LRGen) dumpSemant(w io.Writer) {
 					n = n*10 + int(ch-'0')
 					state = NUM
 				default:
-					endNum()
-					s = append(s, ch)
+					putDollar(n)
+					buf.WriteByte(ch)
 					state = OUT
 				}
 			}
 		}
 		switch state {
 		case DOLLAR:
-			s = append(s, '$')
+			buf.WriteByte('$')
 		case NUM:
-			endNum()
+			putDollar(n)
 		}
-		w.Write(s)
+		if used[0] {
+			typ := prod.Lhs.Type
+			if typ == "" {
+				typ = "interface{}"
+			}
+			fmt.Fprintf(w, "var %sD0 %s\n", g.Prefix, typ)
+		}
+		for i := 1; i <= nRhs; i++ {
+			if used[i] {
+				fmt.Fprintf(w, "%sD%d := %sD[%d].v", g.Prefix, i, g.Prefix, i-1)
+				if typ := prod.Rhs[i-1].Type; typ != "" {
+					fmt.Fprintf(w, ".(%s)\n", typ)
+				} else {
+					fmt.Fprintln(w)
+				}
+			}
+		}
+		buf.WriteTo(w)
+		if used[0] {
+			io.WriteString(w, "\nyyVal = yyD0\n")
+		}
 	}
 	for i, prod := range g.pr.All {
 		if prod.Semant != NoSemant {
