@@ -204,7 +204,7 @@ func ($$ *$$Parser) ParseToken($$major int, $$minor interface{}) bool {
 			switch $$.errSt {
 			case 0: // new error
 				if $$Debug >= 1 {
-					println("\tERROR! Unexpected", $$Name[yymajor])
+					println("\tERROR! Unexpected", $$Name[$$major])
 				}
 `
 	const tmpl4 = `
@@ -349,7 +349,7 @@ func (g *LRGen) dumpSemant(w io.Writer) {
 		}
 		buf.WriteTo(w)
 		if used[0] {
-			io.WriteString(w, "\nyyVal = yyD0\n")
+			fmt.Fprintf(w, "\n%sVal = %sD0\n", g.Prefix, g.Prefix)
 		}
 	}
 	for i, prod := range g.pr.All {
