@@ -330,7 +330,7 @@ func (g *LRGen) dumpSemant(w *bufio.Writer) {
 			if len(prod.Rhs) > 0 {
 				t2 = prod.Rhs[0].Type
 			}
-			if t1 != "" && t1 != t2 {
+			if t1 != t2 {
 				fmt.Printf("Rule %d: default action may clobber type\n", prod.Id)
 			}
 		}
