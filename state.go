@@ -66,9 +66,13 @@ func (s *State) dumpItems(w io.Writer) {
 		}
 		fmt.Fprintln(w)
 	}
+	fmt.Fprintln(w)
 }
 
-func (s *State) dumpAct(w io.Writer, sy *SymTab) {
+func (s *State) dumpActions(w io.Writer, sy *SymTab) {
+	any := false
+
+	// terminal actions
 	for i, sym := range sy.AllT() {
 		act := s.Action[i]
 		if act == s.Default || act == NONE {
@@ -81,13 +85,14 @@ func (s *State) dumpAct(w io.Writer, sy *SymTab) {
 		case ACCEPT:
 			fmt.Fprintln(w, "accept")
 		case SHIFT:
-			if dest := s.Goto[i]; dest != nil {
-				fmt.Fprintf(w, "shift\t%d\n", dest.Id)
-			}
+			fmt.Fprintf(w, "shift\t%d\n", s.Goto[i].Id)
 		default:
 			fmt.Fprintf(w, "reduce\t%d\n", act)
 		}
+		any = true
 	}
+
+	// conflicts
 	for _, conf := range s.Conf {
 		var prev string
 		switch act := s.Action[conf.Sym.Id]; act {
@@ -101,18 +106,27 @@ func (s *State) dumpAct(w io.Writer, sy *SymTab) {
 		fmt.Fprintf(w, "\t%v\treduce\t%d\t**%s/reduce conflict**\n",
 			conf.Sym, conf.Item.Id, prev)
 	}
+	if any {
+		fmt.Fprintln(w)
+		any = false
+	}
+
+	// nonterminal actions
+	for i, sym := range sy.AllNt() {
+		if dest := s.Goto[i+sy.NtBase]; dest != nil {
+			fmt.Fprintf(w, "\t%v\tgoto\t%d\n", sym, dest.Id)
+			any = true
+		}
+	}
+	if any {
+		fmt.Fprintln(w)
+	}
+
+	// default action
 	if s.Default == 0 {
 		fmt.Fprintf(w, "\t.\terror\n")
 	} else {
 		fmt.Fprintf(w, "\t.\treduce\t%d\n", s.Default)
-	}
-}
-
-func (s *State) dumpGoto(w io.Writer, sy *SymTab) {
-	for i, sym := range sy.AllNt() {
-		if dest := s.Goto[i+sy.NtBase]; dest != nil {
-			fmt.Fprintf(w, "\t%v\tgoto\t%d\n", sym, dest.Id)
-		}
 	}
 }
 
@@ -320,10 +334,7 @@ func (t *StTab) Dump(w io.Writer) {
 	for sId, s := range t.All {
 		fmt.Fprintf(w, "state-%d\n", sId)
 		s.dumpItems(w)
-		fmt.Fprintln(w)
-		s.dumpAct(w, &t.sy)
-		fmt.Fprintln(w)
-		s.dumpGoto(w, &t.sy)
+		s.dumpActions(w, &t.sy)
 		fmt.Fprintln(w)
 	}
 }
