@@ -55,9 +55,9 @@ L:
 	}
 }
 
-func (s *State) dumpItems(w io.Writer) {
+func (s *State) dumpItems(w io.Writer, closure bool) {
 	for i, it := range s.Closure {
-		if i >= len(s.Kernel) && !it.Final() {
+		if !closure && i >= len(s.Kernel) && !it.Final() {
 			continue
 		}
 		fmt.Fprintf(w, "\t%v", it)
@@ -338,7 +338,7 @@ func (t *StTab) genReduce() {
 func (t *StTab) Dump(w io.Writer) {
 	for sId, s := range t.All {
 		fmt.Fprintf(w, "state-%d\n", sId)
-		s.dumpItems(w)
+		s.dumpItems(w, false)
 		s.dumpActions(w, &t.sy)
 		fmt.Fprintln(w)
 	}
