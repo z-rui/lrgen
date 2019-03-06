@@ -10,16 +10,17 @@ const (
 )
 
 type Symbol struct {
-	Id       int
-	Name     string
-	Type     string
-	Nullable bool
-	IsNt     bool
-	Assoc    Assoc
-	Prec     int
-	LhsProd  []*Prod // productions on lhs
-	RhsProd  int     // # occurrences on rhs
-	First    BitSet  // FIRST set
+	Id        int
+	Name      string
+	Type      string
+	Nullable  bool
+	Reducible bool
+	IsNt      bool
+	Assoc     Assoc
+	Prec      int
+	LhsProd   []*Prod // productions on lhs
+	RhsProd   int     // # occurrences on rhs
+	First     BitSet  // FIRST set
 }
 
 func (s *Symbol) String() string {
@@ -42,9 +43,10 @@ func (t *SymTab) Lookup(name string) *Symbol {
 		return sym
 	}
 	sym := &Symbol{
-		Id:   len(t.All),
-		Name: name,
-		IsNt: t.NtBase > 0,
+		Id:        len(t.All),
+		Name:      name,
+		Reducible: t.NtBase == 0,
+		IsNt:      t.NtBase > 0,
 	}
 	t.All = append(t.All, sym)
 	t.nameMap[name] = sym
@@ -101,6 +103,46 @@ func (t *SymTab) GenFirst() {
 					changed = true
 					lhs.Nullable = true
 				}
+			}
+		}
+		if !changed {
+			break
+		}
+	}
+}
+
+// GenReducible computes the Reducible attribute of each symbol and production.
+func (t *SymTab) GenReducible(start *Symbol) {
+	reachable := []*Symbol{start}
+	vis := NewBitSet(uint(t.CountNt()))
+	vis.Set(uint(start.Id - t.NtBase))
+	for i := 0; i < len(reachable); i++ {
+		sym := reachable[i]
+		for _, prod := range sym.LhsProd {
+			for _, rhssym := range prod.Rhs {
+				id := uint(rhssym.Id - t.NtBase)
+				if rhssym.IsNt && !vis.Test(id) {
+					reachable = append(reachable, rhssym)
+					vis.Set(id)
+				}
+			}
+		}
+	}
+	for {
+		changed := false
+		for _, sym := range reachable {
+		L:
+			for _, prod := range sym.LhsProd {
+				for _, rhssym := range prod.Rhs {
+					if !rhssym.Reducible {
+						continue L
+					}
+				}
+				if !sym.Reducible || !prod.Reducible {
+					changed = true
+				}
+				sym.Reducible = true
+				prod.Reducible = true
 			}
 		}
 		if !changed {

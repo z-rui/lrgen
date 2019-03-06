@@ -20,6 +20,7 @@ type LRGen struct {
 
 func (g *LRGen) GenAll() {
 	g.sy.GenFirst()
+	g.sy.GenReducible(g.pr.All[1].Lhs)
 	g.StTab.GenAll()
 	g.genParTab()
 }
@@ -67,6 +68,20 @@ func (g *LRGen) dumpStats(w io.Writer) {
 			}
 		}
 	}
+	notreduced := 0
+	for _, prod := range g.pr.All[1:] {
+		if !prod.Reducible {
+			if notreduced == 0 {
+				fmt.Fprintln(w, "Useless rules:")
+			}
+			fmt.Fprintf(w, "(%d)\t%v\n", prod.Id, Item{prod, 0})
+			notreduced++
+		}
+	}
+	if notreduced > 0 {
+		fmt.Fprintln(w)
+	}
+
 	fmt.Fprintln(w, nT, "terminals,", nNt, "nonterminals")
 	fmt.Fprintln(w, nProd, "productions,", nState, "states")
 	fmt.Fprintln(w, g.pt.Size(), "entries in parsing table")
@@ -77,10 +92,8 @@ func (g *LRGen) dumpStats(w io.Writer) {
 	if total := sr + rr; total > 0 {
 		fmt.Println(total, "conflicts.")
 	}
-	for _, sym := range g.sy.AllNt() {
-		if len(sym.LhsProd) == 0 && sym.RhsProd > 0 {
-			fmt.Println(sym, "undefined")
-		}
+	if notreduced > 0 {
+		fmt.Println(notreduced, "rule(s) not reduced.")
 	}
 }
 

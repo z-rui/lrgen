@@ -192,6 +192,9 @@ func (t *StTab) makeClosure(s *State) {
 		lhs := q[i]
 		la := s.CLA[lhs.Id-t.sy.NtBase]
 		for _, prod := range lhs.LhsProd {
+			if !prod.Reducible {
+				continue // don't bother with useless productions
+			}
 			it.Prod = prod
 			s.Closure = append(s.Closure, StateItem{
 				Item:      it,

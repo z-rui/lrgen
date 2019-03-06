@@ -1,11 +1,12 @@
 package main
 
 type Prod struct {
-	Id      int
-	Lhs     *Symbol
-	Rhs     []*Symbol
-	PrecSym *Symbol
-	Semant  string
+	Id        int
+	Lhs       *Symbol
+	Rhs       []*Symbol
+	PrecSym   *Symbol
+	Semant    string
+	Reducible bool
 }
 
 const NoSemant = "}{" // this won't be an actual semantic action
