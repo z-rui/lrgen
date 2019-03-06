@@ -46,7 +46,7 @@ func (g *LRGen) parseTokDef() {
 			case "error":
 				if g.Token != CODEFRAG {
 					g.syntaxError()
-				} 
+				}
 				g.errCode = string(g.Text)
 				g.getToken()
 			case "token":
