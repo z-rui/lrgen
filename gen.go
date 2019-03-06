@@ -25,11 +25,15 @@ func (g *LRGen) GenAll() {
 }
 
 func (g *LRGen) Dump() {
-	g.StTab.Dump(g.Stat)
-	g.dumpStats(g.Stat)
-	g.dumpSymbols(g.Out)
-	g.dumpTable(g.Out)
-	g.dumpParser(g.Out)
+	stat := bufio.NewWriter(g.Stat)
+	defer stat.Flush()
+	g.StTab.Dump(stat)
+	g.dumpStats(stat)
+	out := bufio.NewWriter(g.Out)
+	defer out.Flush()
+	g.dumpSymbols(out)
+	g.dumpTable(out)
+	g.dumpParser(out)
 }
 
 func (g *LRGen) Run() {
@@ -80,36 +84,36 @@ func (g *LRGen) dumpStats(w io.Writer) {
 	}
 }
 
-func (g *LRGen) dumpSymbols(w io.Writer) {
-	io.WriteString(w, "// Tokens\nconst (\n\t_ = iota + 2 // eof, error, unk\n")
+func (g *LRGen) dumpSymbols(w *bufio.Writer) {
+	w.WriteString("// Tokens\nconst (\n\t_ = iota + 2 // eof, error, unk\n")
 	for _, sym := range g.sy.All[3:g.sy.NtBase] {
 		fmt.Fprintf(w, "\t%v\n", sym)
 	}
-	io.WriteString(w, ")\n\n")
+	w.WriteString(")\n\n")
 	fmt.Fprintf(w, "var %sName = []string{\n", g.Prefix)
 	for _, sym := range g.sy.AllT() {
 		fmt.Fprintf(w, "\t%q,\n", sym)
 	}
-	io.WriteString(w, "}\n\n")
+	w.WriteString("}\n\n")
 }
 
-func (g *LRGen) dumpTable(w io.Writer) {
+func (g *LRGen) dumpTable(w *bufio.Writer) {
 	dump := func(name string, arr []int) {
 		fmt.Fprintf(w, "var %s%s = [...]int{", g.Prefix, name)
 		for i, v := range arr {
 			if i%10 == 0 {
-				io.WriteString(w, "\n\t")
+				w.WriteString("\n\t")
 			} else {
-				io.WriteString(w, " ")
+				w.WriteString(" ")
 			}
 			fmt.Fprintf(w, "%d,", v)
 		}
-		io.WriteString(w, "\n}\n\n")
+		w.WriteString("\n}\n\n")
 	}
 	t := g.pt
 	fmt.Fprintf(w, "const %sAccept = %d\n", g.Prefix, t.Accept)
 	fmt.Fprintf(w, "const %sLast = %d\n\n", g.Prefix, g.sy.NtBase)
-	io.WriteString(w, "// Parse tables\n")
+	w.WriteString("// Parse tables\n")
 	dump("R1", t.R1)
 	dump("R2", t.R2)
 	dump("Reduce", t.Reduce)
@@ -120,7 +124,7 @@ func (g *LRGen) dumpTable(w io.Writer) {
 	dump("Pgoto", t.Pgoto)
 }
 
-func (g *LRGen) dumpParser(w io.Writer) {
+func (g *LRGen) dumpParser(w *bufio.Writer) {
 	const tmpl1 = `type $$SymType struct {
 	$$s int         // state
 `
@@ -272,15 +276,14 @@ $$reduce:
 	goto $$stack
 }
 `
-	io.WriteString(w, strings.Replace(tmpl1, "$$", g.Prefix, -1))
-	io.WriteString(w, g.union)
-	io.WriteString(w, strings.Replace(tmpl2, "$$", g.Prefix, -1))
+	w.WriteString(strings.Replace(tmpl1, "$$", g.Prefix, -1))
+	w.WriteString(g.union)
+	w.WriteString(strings.Replace(tmpl2, "$$", g.Prefix, -1))
 	g.dumpSemant(w)
-	io.WriteString(w, strings.Replace(tmpl3, "$$", g.Prefix, -1))
+	w.WriteString(strings.Replace(tmpl3, "$$", g.Prefix, -1))
 }
 
-func (g *LRGen) dumpSemant(w io.Writer) {
-	buf := bufio.NewWriter(w)
+func (g *LRGen) dumpSemant(w *bufio.Writer) {
 	dump := func(prod *Prod) {
 		r := strings.NewReader(prod.Semant)
 		for {
@@ -294,32 +297,32 @@ func (g *LRGen) dumpSemant(w io.Writer) {
 				_, err = fmt.Fscan(r, &n)
 				if err == nil {
 					n--
-					fmt.Fprintf(buf, "%sD[%d]", g.Prefix, n)
+					fmt.Fprintf(w, "%sD[%d]", g.Prefix, n)
 					if 0 <= n && n < len(prod.Rhs) && prod.Rhs[n].Type != "" {
-						fmt.Fprintf(buf, ".%s", prod.Rhs[n].Type)
+						fmt.Fprintf(w, ".%s", prod.Rhs[n].Type)
 					}
 				} else {
 					ch, err = r.ReadByte()
 					if err == nil {
 						if ch == '$' {
-							fmt.Fprintf(buf, "%sval", g.Prefix)
+							fmt.Fprintf(w, "%sval", g.Prefix)
 							if prod.Lhs.Type != "" {
-								fmt.Fprintf(buf, ".%s", prod.Lhs.Type)
+								fmt.Fprintf(w, ".%s", prod.Lhs.Type)
 							}
 						} else {
-							buf.WriteByte('$')
-							buf.WriteByte(ch)
+							w.WriteByte('$')
+							w.WriteByte(ch)
 						}
 					}
 				}
 			default:
-				buf.WriteByte(ch)
+				w.WriteByte(ch)
 			}
 		}
 	}
 	for i, prod := range g.pr.All {
 		if prod.Semant != NoSemant {
-			fmt.Fprintf(buf, "\ncase %d:\n", i)
+			fmt.Fprintf(w, "\ncase %d:\n", i)
 			dump(prod)
 		} else {
 			t1 := prod.Lhs.Type
@@ -332,5 +335,4 @@ func (g *LRGen) dumpSemant(w io.Writer) {
 			}
 		}
 	}
-	buf.Flush()
 }

@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"io"
 )
 
 func (g *LRGen) copyUntilMark() {
+	w := bufio.NewWriter(g.Out)
+	defer w.Flush()
 	for {
 		line, err := g.In.ReadString('\n')
 		g.line++
@@ -14,7 +17,7 @@ func (g *LRGen) copyUntilMark() {
 		if err != nil {
 			g.Fatal(err.Error())
 		}
-		io.WriteString(g.Out, line)
+		w.WriteString(line)
 	}
 }
 
