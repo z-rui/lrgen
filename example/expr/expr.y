@@ -6,7 +6,7 @@ import (
 	"io"
 	"math/big"
 	"os"
-	"strconv"
+	"strings"
 )
 
 type lex struct {
@@ -19,77 +19,70 @@ type lex struct {
 	text      []rune
 }
 
-const (
-	Eof     = 0
-	Unknown = 2
-)
-
-func (l *lex) next() rune {
-	var c rune
-	var err error
-	if l.lookahead == 0 {
-		c, _, err = l.ReadRune()
-		if err == io.EOF {
-			c = Eof
-		} else if err != nil {
-			l.error(err)
-			os.Exit(1)
-		}
-	} else {
-		c = l.lookahead
-		l.lookahead = 0
-	}
-	return c
-}
-
-func (l *lex) getToken() {
+func (l *lex) Lex(yyval *yySymType) int {
 reinput:
-	l.text = l.text[:0]
-	c := l.next()
-	l.text = append(l.text, c)
+	c, _, err := l.ReadRune()
+	if err != nil {
+		return 0
+	}
 	switch c {
-	case Eof:
-		l.major = Eof
 	case '+':
-		l.major = PLUS
+		return PLUS
 	case '-':
-		l.major = MINUS
+		return MINUS
 	case '*', '×':
-		l.major = TIMES
+		return TIMES
 	case '/', '÷':
-		l.major = DIV
+		return DIV
 	case '(':
-		l.major = LPAR
+		return LPAR
 	case ')':
-		l.major = RPAR
-	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.':
-		l.scanNum(c)
-		l.major = NUM
-		if r, ok := (&big.Rat{}).SetString(string(l.text)); ok {
-			l.minor = r
-		} else {
-			l.error("bad formed number")
-			l.major = Unknown
-		}
+		return RPAR
 	case '\n':
 		l.lineno++
-		l.major = NL
+		return NL
 	case ' ', '\t', '\r', '\f', '\v':
 		goto reinput
 	default:
-		l.major = Unknown
-	}
-}
-
-func (l *lex) scanNum(c rune) {
-	for {
-		if c = l.next(); '0' <= c && c <= '9' || c == '.' {
-			l.text = append(l.text, c)
-		} else {
-			break
+		var buf []rune
+		for err == nil && strings.ContainsRune("0123456789.", c) {
+			buf = append(buf, c)
+			c, _, err = l.ReadRune()
+		}
+		if len(buf) > 0 {
+			switch err {
+			case io.EOF:
+			case nil:
+				l.UnreadRune()
+			default:
+				l.error(err.Error())
+			}
+			var ok bool
+			yyval.num, ok = new(big.Rat).SetString(string(buf))
+			if ok {
+				return NUM
+			}
 		}
 	}
-	l.lookahead = c
+	return 2 // $unk
+}
+
+func (l *lex) Error(state int, tok int, expect []int) {
+	s := "Unexpected " + yyName[tok]
+	if len(expect) > 0 {
+		for i, v := range expect {
+			switch i {
+			case 0:
+				s += ", expecting "
+			case len(expect) - 1:
+				s += ", or "
+			default:
+				s += ", "
+			}
+			s += yyName[v]
+		}
+	}
+	l.error(s)
 }
 
 func (l *lex) error(v ...interface{}) {
@@ -98,33 +91,26 @@ func (l *lex) error(v ...interface{}) {
 }
 
 func main() {
-	var p yyParser
-	yyDebug = 1
-	p.Reader = bufio.NewReader(os.Stdin)
-	p.filename = "<stdin>"
-	p.lineno = 1
-	for {
-		p.getToken()
-		if !p.ParseToken(p.major, p.minor) || p.major == Eof {
-			break
-		}
-	}
+	yyParse(&lex{
+		Reader: bufio.NewReader(os.Stdin),
+		filename: "<stdin>",
+		lineno: 1,
+	})
 }
 
 %%
 
-%token <*big.Rat> NUM
+%union {
+	num *big.Rat
+}
+
+%token <num> NUM
 %token LPAR RPAR NL
 
 %left PLUS MINUS
 %left TIMES DIV
 
-%type <*big.Rat> expr
-
-%base lex
-%error {
-	yy.error("syntax error near", strconv.Quote(string(yy.text)))
-}
+%type <num> expr
 
 %%
 
@@ -140,7 +126,7 @@ input:
 		}
 		fmt.Println(s)
 	}
-|	input error NL { yy.ErrOk() }
+|	input error NL { yyerror = 0 }
 ;
 
 expr:
