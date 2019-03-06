@@ -33,9 +33,9 @@ func (g *LRGen) Dump() {
 }
 
 func (g *LRGen) Run() {
-	g.sy.Lookup("$")
+	g.sy.Lookup("$end")
 	g.sy.Lookup("error")
-	g.sy.Lookup("(unknown)")
+	g.sy.Lookup("$unk")
 	// augment start symbol
 	dollar := g.sy.All[0]
 	augment := g.pr.NewProd(dollar, []*Symbol{dollar, dollar})

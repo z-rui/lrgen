@@ -13,7 +13,12 @@ func (it Item) Less(x Item) bool {
 }
 
 func (it Item) String() string {
-	s := []byte(it.Lhs.String())
+	var s []byte
+	if it.Lhs.Id == 0 {
+		s = append(s, "$acc"...)
+	} else {
+		s = append(s, it.Lhs.String()...)
+	}
 	s = append(s, ": "...)
 	for i, sym := range it.Rhs {
 		if i == it.Pos {
