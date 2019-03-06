@@ -35,19 +35,11 @@ func (g *LRGen) parseTokDef() {
 			s := string(g.Text)
 			g.getToken()
 			switch s {
-			case "base":
-				switch g.Token {
-				case IDENT, CODEFRAG:
-					g.base = string(g.Text)
-					g.getToken()
-				default:
-					g.syntaxError()
-				}
-			case "error":
+			case "union":
 				if g.Token != CODEFRAG {
 					g.syntaxError()
 				}
-				g.errCode = string(g.Text)
+				g.union = string(g.Text)
 				g.getToken()
 			case "token":
 				if g.sy.NtBase > 0 {
