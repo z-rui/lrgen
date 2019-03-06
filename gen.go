@@ -161,7 +161,7 @@ $$stack:
 $$action:
 	// look up shift or reduce
 	$$n = int($$Pact[$$state])
-	if $$n == len($$Action) { // simple state
+	if $$n == len($$Action) && yystate != yyAccept { // simple state
 		goto $$default
 	}
 	if $$major < 0 {
