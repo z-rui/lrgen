@@ -321,9 +321,11 @@ func (t *StTab) genReduce() {
 					s.Conf = append(s.Conf, Conflict{t.sy.All[i], it.Item})
 					return
 				}
-				actCnt[it.Id]++
-				if actCnt[it.Id] > actCnt[s.Default] {
-					s.Default = Action(it.Id)
+				if act := s.Action[i]; act == Action(it.Id) {
+					actCnt[act]++
+					if actCnt[act] > actCnt[s.Default] {
+						s.Default = act
+					}
 				}
 			})
 		}
