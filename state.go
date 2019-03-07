@@ -96,9 +96,9 @@ func (s *State) dumpActions(w io.Writer, sy *SymTab) {
 	for _, conf := range s.Conf {
 		var prev string
 		switch act := s.Action[conf.Sym.Id]; act {
-		case NONE, ERROR, ACCEPT:
+		case NONE, ERROR:
 			panic("BUG: cannot reduce on state")
-		case SHIFT:
+		case ACCEPT, SHIFT:
 			prev = "shift"
 		default:
 			prev = "reduce"
@@ -301,9 +301,7 @@ func (t *StTab) genReduce() {
 					s.Action[i] = Action(it.Id)
 				case ERROR:
 					return // do not override ERROR
-				case ACCEPT:
-					panic("BUG: cannot reduce on accepting state")
-				case SHIFT: // shift/reduce conflict, try to resolve
+				case ACCEPT, SHIFT: // shift/reduce conflict, try to resolve
 					s0 := t.sy.All[i] // prec of lookahead
 					s1 := it.PrecSym  // prec of production
 					if s0.Assoc != UNSPEC && s1 != nil && s1.Assoc != UNSPEC {
