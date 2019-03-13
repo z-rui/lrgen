@@ -139,7 +139,7 @@ func (g *LRGen) dumpTable(w *bufio.Writer) {
 
 func (g *LRGen) dumpParser(w *bufio.Writer) {
 	const tmpl1 = `type $$SymType struct {
-	$$s int         // state
+	$$s int // state
 `
 	const tmpl2 = `
 }
@@ -152,8 +152,8 @@ type $$Lexer interface {
 var $$Debug = 0 // debug info from parser
 
 // $$Parse read tokens from $$lex and parses input.
-// Returns true on success.
-func $$Parse($$lex $$Lexer) bool {
+// Returns result on success, or nil on failure.
+func $$Parse($$lex $$Lexer) *$$SymType {
 	var (
 		$$n, $$t int
 		$$state  int
@@ -210,7 +210,7 @@ $$reduce:
 			if $$Debug >= 1 {
 				println("\tACCEPT!")
 			}
-			return true
+			return &$$stack[0]
 		}
 		switch $$error {
 		case 0: // new error
@@ -239,7 +239,7 @@ $$reduce:
 					}
 				}
 				if len($$stack) == 0 {
-					return false
+					return nil
 				}
 				if $$Debug >= 2 {
 					println("\tPopping state", $$state)
@@ -254,7 +254,7 @@ $$reduce:
 			goto $$stack
 		default: // still waiting for valid tokens
 			if $$major == 0 { // no more tokens
-				return false
+				return nil
 			}
 			if $$Debug >= 1 {
 				println("\tDISCARD token", $$Name[$$major])
@@ -335,7 +335,7 @@ func (g *LRGen) dumpSemant(w *bufio.Writer) {
 	}
 	for i, prod := range g.pr.All {
 		if prod.Semant != NoSemant {
-			fmt.Fprintf(w, "\ncase %d:\n", i)
+			fmt.Fprintf(w, "\n\tcase %d:\n", i)
 			dump(prod)
 		} else {
 			t1 := prod.Lhs.Type
