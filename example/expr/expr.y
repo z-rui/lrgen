@@ -11,12 +11,8 @@ import (
 
 type lex struct {
 	*bufio.Reader
-	filename  string
-	lineno    int
-	lookahead rune
-	major     int
-	minor     interface{}
-	text      []rune
+	filename string
+	lineno   int
 }
 
 func (l *lex) Lex(yyval *yySymType) int {
@@ -92,9 +88,9 @@ func (l *lex) error(v ...interface{}) {
 
 func main() {
 	yyParse(&lex{
-		Reader: bufio.NewReader(os.Stdin),
+		Reader:   bufio.NewReader(os.Stdin),
 		filename: "<stdin>",
-		lineno: 1,
+		lineno:   1,
 	})
 }
 
