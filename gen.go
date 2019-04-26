@@ -337,7 +337,7 @@ func (g *LRGen) dumpSemant(w *bufio.Writer) {
 		if prod.Semant != NoSemant {
 			fmt.Fprintf(w, "\n\tcase %d:\n", i)
 			dump(prod)
-		} else {
+		} else if prod.Id != 0 {
 			t1 := prod.Lhs.Type
 			t2 := ""
 			if len(prod.Rhs) > 0 {
