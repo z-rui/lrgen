@@ -156,12 +156,13 @@ var $$Debug = 0 // debug info from parser
 func $$Parse($$lex $$Lexer) *$$SymType {
 	var (
 		$$n, $$t int
-		$$state  int
-		$$error  int
-		$$major  int = -1
+		$$state  = 0
+		$$error  = 0
+		$$major  = -1
 		$$stack  []$$SymType
-		$$D      []$$SymType
-		$$val    $$SymType
+		$$D      []$$SymType // rhs of reduction
+		$$lval   $$SymType   // lexcial value from lexer
+		$$val    $$SymType   // value to be pushed onto stack
 	)
 	goto $$action
 $$stack:
@@ -178,7 +179,7 @@ $$action:
 		goto $$default
 	}
 	if $$major < 0 {
-		$$major = $$lex.Lex(&$$val)
+		$$major = $$lex.Lex(&$$lval)
 		if $$Debug >= 1 {
 			println("In state", $$state)
 		}
@@ -200,6 +201,7 @@ $$action:
 			$$error--
 		}
 		$$major = -1
+		$$val = $$lval
 		goto $$stack
 	}
 $$default:
