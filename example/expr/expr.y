@@ -51,7 +51,7 @@ reinput:
 			case nil:
 				l.UnreadRune()
 			default:
-				l.error(err.Error())
+				l.Error(err.Error())
 			}
 			var ok bool
 			yyval.num, ok = new(big.Rat).SetString(string(buf))
@@ -63,27 +63,8 @@ reinput:
 	return 2 // $unk
 }
 
-func (l *lex) Error(state int, tok int, expect []int) {
-	s := "Unexpected " + yyName[tok]
-	if len(expect) > 0 {
-		for i, v := range expect {
-			switch i {
-			case 0:
-				s += ", expecting "
-			case len(expect) - 1:
-				s += ", or "
-			default:
-				s += ", "
-			}
-			s += yyName[v]
-		}
-	}
-	l.error(s)
-}
-
-func (l *lex) error(v ...interface{}) {
-	fmt.Printf("%s:%d: ", l.filename, l.lineno)
-	fmt.Println(v...)
+func (l *lex) Error(s string) {
+	fmt.Printf("%s:%d: %s\n", l.filename, l.lineno, s)
 }
 
 func main() {

@@ -146,7 +146,7 @@ func (g *LRGen) dumpParser(w *bufio.Writer) {
 
 type $$Lexer interface {
 	Lex(*$$SymType) int
-	Error($$state, $$major int, expect []int)
+	Error(string)
 }
 
 var $$Debug = 0 // debug info from parser
@@ -219,17 +219,34 @@ $$reduce:
 			if $$Debug >= 1 {
 				println("\tERROR!")
 			}
+			msg := "unexpected " + $$Name[$$major]
 			var expect []int
 			if $$Reduce[$$state] == 0 {
 				$$n = $$Pact[$$state] + 3
 				for i := 3; i < $$Last; i++ {
 					if 0 <= $$n && $$n < len($$Action) && $$Check[$$n] == i && $$Action[$$n] != 0 {
 						expect = append(expect, i)
+						if len(expect) > 4 {
+							break
+						}
 					}
 					$$n++
 				}
 			}
-			$$lex.Error($$state, $$major, expect)
+			if n := len(expect); 0 < n && n <= 4 {
+				for i, tok := range expect {
+					switch i {
+					case 0:
+						msg += ", expecting "
+					case n-1:
+						msg += " or "
+					default:
+						msg += ", "
+					}
+					msg += $$Name[tok]
+				}
+			}
+			$$lex.Error(msg)
 			fallthrough
 		case 1, 2: // partially recovered error
 			for { // pop states until error can be shifted
