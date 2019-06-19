@@ -1,82 +1,3 @@
-package main
-
-import (
-	"bufio"
-	"fmt"
-	"io"
-	"math/big"
-	"os"
-	"strings"
-)
-
-type lex struct {
-	*bufio.Reader
-	filename string
-	lineno   int
-}
-
-func (l *lex) Lex(yyval *yySymType) int {
-reinput:
-	c, _, err := l.ReadRune()
-	if err != nil {
-		return 0
-	}
-	switch c {
-	case '+':
-		return PLUS
-	case '-':
-		return MINUS
-	case '*', '×':
-		return TIMES
-	case '/', '÷':
-		return DIV
-	case '(':
-		return LPAR
-	case ')':
-		return RPAR
-	case '\n':
-		l.lineno++
-		return NL
-	case ' ', '\t', '\r', '\f', '\v':
-		goto reinput
-	default:
-		var buf []rune
-		for err == nil && strings.ContainsRune("0123456789.", c) {
-			buf = append(buf, c)
-			c, _, err = l.ReadRune()
-		}
-		if len(buf) > 0 {
-			switch err {
-			case io.EOF:
-			case nil:
-				l.UnreadRune()
-			default:
-				l.Error(err.Error())
-			}
-			var ok bool
-			yyval.num, ok = new(big.Rat).SetString(string(buf))
-			if ok {
-				return NUM
-			}
-		}
-	}
-	return 2 // $unk
-}
-
-func (l *lex) Error(s string) {
-	fmt.Printf("%s:%d: %s\n", l.filename, l.lineno, s)
-}
-
-func main() {
-	yyParse(&lex{
-		Reader:   bufio.NewReader(os.Stdin),
-		filename: "<stdin>",
-		lineno:   1,
-	})
-}
-
-%%
-
 %union {
 	num *big.Rat
 }
@@ -137,3 +58,82 @@ expr:
 		$$ = $1.Quo($1, $3)
 	}
 ;
+
+%%
+
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"math/big"
+	"os"
+	"strings"
+)
+
+type yyLex struct {
+	*bufio.Reader
+	filename string
+	lineno   int
+}
+
+func (l *yyLex) Lex(yyval *yySymType) int {
+reinput:
+	c, _, err := l.ReadRune()
+	if err != nil {
+		return 0
+	}
+	switch c {
+	case '+':
+		return PLUS
+	case '-':
+		return MINUS
+	case '*', '×':
+		return TIMES
+	case '/', '÷':
+		return DIV
+	case '(':
+		return LPAR
+	case ')':
+		return RPAR
+	case '\n':
+		l.lineno++
+		return NL
+	case ' ', '\t', '\r', '\f', '\v':
+		goto reinput
+	default:
+		var buf []rune
+		for err == nil && strings.ContainsRune("0123456789.", c) {
+			buf = append(buf, c)
+			c, _, err = l.ReadRune()
+		}
+		if len(buf) > 0 {
+			switch err {
+			case io.EOF:
+			case nil:
+				l.UnreadRune()
+			default:
+				l.Error(err.Error())
+			}
+			var ok bool
+			yyval.num, ok = new(big.Rat).SetString(string(buf))
+			if ok {
+				return NUM
+			}
+		}
+	}
+	return 2 // $unk
+}
+
+func (l *yyLex) Error(s string) {
+	fmt.Printf("%s:%d: %s\n", l.filename, l.lineno, s)
+}
+
+func main() {
+	yyParse(&yyLex{
+		Reader:   bufio.NewReader(os.Stdin),
+		filename: "<stdin>",
+		lineno:   1,
+	})
+}

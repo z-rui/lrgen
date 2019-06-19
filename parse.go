@@ -1,28 +1,31 @@
 package main
 
-import (
-	"bufio"
-	"io"
+//go:generate lexgen lex.l
+
+const (
+	KEYWORD = iota + 3
+	IDENT
+	TYPENAME
+	CODEFRAG
+	MARK
+	COLON
+	SEMI
+	PIPE
 )
 
-func (g *LRGen) copyUntilMark() {
-	w := bufio.NewWriter(g.Out)
-	defer w.Flush()
-	for {
-		line, err := g.In.ReadString('\n')
-		g.line++
-		if line == "%%\n" || err == io.EOF {
-			break
-		}
-		if err != nil {
-			g.Fatal(err.Error())
-		}
-		w.WriteString(line)
-	}
+type yySymType struct {
+	s string
+}
+
+func (g *LRGen) getToken() {
+	g.Token = g.Lex(&g.yylval)
+}
+
+func (g *LRGen) syntaxError() {
+	g.Fatal("syntax error")
 }
 
 func (g *LRGen) parse() {
-	g.copyUntilMark() // prologue
 	g.getToken()
 	g.parseTokDef()
 	g.parseRuleDef()
@@ -35,14 +38,14 @@ func (g *LRGen) parseTokDef() {
 	for {
 		switch g.Token {
 		case KEYWORD:
-			s := string(g.Text)
+			s := g.yylval.s
 			g.getToken()
 			switch s {
 			case "union":
 				if g.Token != CODEFRAG {
 					g.syntaxError()
 				}
-				g.union = string(g.Text)
+				g.Union = g.yylval.s
 				g.getToken()
 			case "token":
 				if g.sy.NtBase > 0 {
@@ -77,11 +80,11 @@ func (g *LRGen) parseTokDef() {
 func (g *LRGen) parseTypes() {
 	var typename string
 	if g.Token == TYPENAME {
-		typename = string(g.Text)
+		typename = g.yylval.s
 		g.getToken()
 	}
 	for g.Token == IDENT {
-		sym := g.sy.Lookup(string(g.Text))
+		sym := g.sy.Lookup(g.yylval.s)
 		sym.Type = typename
 		g.getToken()
 	}
@@ -93,7 +96,7 @@ func (g *LRGen) parsePrec(assoc Assoc) {
 	}
 	g.currPrec++
 	for g.Token == IDENT {
-		sym := g.sy.Lookup(string(g.Text))
+		sym := g.sy.Lookup(g.yylval.s)
 		sym.Assoc = assoc
 		sym.Prec = g.currPrec
 		g.getToken()
@@ -109,16 +112,16 @@ func (g *LRGen) parseRuleDef() {
 		var rhs []*Symbol
 		switch g.Token {
 		case IDENT:
-			lhs = g.sy.Lookup(string(g.Text))
+			lhs = g.sy.Lookup(g.yylval.s)
 			g.getToken()
-			if g.Token != ':' {
+			if g.Token != COLON {
 				g.syntaxError()
 			}
 			g.getToken()
 			if !g.sy.IsNt(lhs) {
 				g.Fatal("lhs must be nonterminal")
 			}
-		case '|': // use previous lhs
+		case PIPE: // use previous lhs
 			if lhs == nil {
 				g.syntaxError()
 			}
@@ -129,24 +132,24 @@ func (g *LRGen) parseRuleDef() {
 			g.syntaxError()
 		}
 		for g.Token == IDENT {
-			sym := g.sy.Lookup(string(g.Text))
+			sym := g.sy.Lookup(g.yylval.s)
 			rhs = append(rhs, sym)
 			g.getToken()
 		}
 		prod := g.pr.NewProd(lhs, rhs)
-		if g.Token == KEYWORD && string(g.Text) == "prec" {
+		if g.Token == KEYWORD && g.yylval.s == "prec" {
 			g.getToken()
 			if g.Token != IDENT {
 				g.syntaxError()
 			}
-			prod.PrecSym = g.sy.Lookup(string(g.Text))
+			prod.PrecSym = g.sy.Lookup(g.yylval.s)
 			g.getToken()
 		}
 		if g.Token == CODEFRAG {
-			prod.Semant = string(g.Text)
+			prod.Semant = g.yylval.s
 			g.getToken()
 		}
-		if g.Token == ';' {
+		if g.Token == SEMI {
 			lhs = nil
 			g.getToken()
 		}

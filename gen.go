@@ -4,18 +4,24 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"strings"
+	"os"
 )
 
 type LRGen struct {
-	Lexer
+	yyLex
+	Token    int
+	yylval   yySymType
 	StTab
-	Out      io.Writer
 	Stat     io.Writer
 	Prefix   string // "yy" in yyParser
-	union    string // fields in yySymType
+	Union    string // fields in yySymType
 	pt       ParTab
 	currPrec int
+}
+
+func (g *LRGen) Fatal(s string) {
+	g.yyLex.Error(s)
+	os.Exit(1)
 }
 
 func (g *LRGen) GenAll() {
@@ -36,6 +42,8 @@ func (g *LRGen) Dump() {
 	g.dumpTable(out)
 	g.dumpParser(out)
 }
+
+func (g *LRGen) Rules() []*Prod { return g.pr.All }
 
 func (g *LRGen) Run() {
 	g.sy.Lookup("$end")
@@ -138,233 +146,9 @@ func (g *LRGen) dumpTable(w *bufio.Writer) {
 }
 
 func (g *LRGen) dumpParser(w *bufio.Writer) {
-	const tmpl1 = `type $$SymType struct {
-	$$s int // state
-`
-	const tmpl2 = `
+	err := yyTmpl.Execute(w, g)
+	if err != nil {
+		g.Fatal(err.Error())
+	}
 }
 
-type $$Lexer interface {
-	Lex(*$$SymType) int
-	Error(string)
-}
-
-var $$Debug = 0 // debug info from parser
-
-// $$Parse read tokens from $$lex and parses input.
-// Returns result on success, or nil on failure.
-func $$Parse($$lex $$Lexer) *$$SymType {
-	var (
-		$$n, $$t int
-		$$state  = 0
-		$$error  = 0
-		$$major  = -1
-		$$stack  []$$SymType
-		$$D      []$$SymType // rhs of reduction
-		$$lval   $$SymType   // lexcial value from lexer
-		$$val    $$SymType   // value to be pushed onto stack
-	)
-	goto $$action
-$$stack:
-	$$val.$$s = $$state
-	$$stack = append($$stack, $$val)
-	$$state = $$n
-	if $$Debug >= 2 {
-		println("\tGOTO state", $$n)
-	}
-$$action:
-	// look up shift or reduce
-	$$n = int($$Pact[$$state])
-	if $$n == len($$Action) && $$state != $$Accept { // simple state
-		goto $$default
-	}
-	if $$major < 0 {
-		$$major = $$lex.Lex(&$$lval)
-		if $$Debug >= 1 {
-			println("In state", $$state)
-		}
-		if $$Debug >= 2 {
-			println("\tInput token", $$Name[$$major])
-		}
-	}
-	$$n += $$major
-	if 0 <= $$n && $$n < len($$Action) && int($$Check[$$n]) == $$major {
-		$$n = int($$Action[$$n])
-		if $$n <= 0 {
-			$$n = -$$n
-			goto $$reduce
-		}
-		if $$Debug >= 1 {
-			println("\tSHIFT token", $$Name[$$major])
-		}
-		if $$error > 0 {
-			$$error--
-		}
-		$$major = -1
-		$$val = $$lval
-		goto $$stack
-	}
-$$default:
-	$$n = int($$Reduce[$$state])
-$$reduce:
-	if $$n == 0 {
-		if $$major == 0 && $$state == $$Accept {
-			if $$Debug >= 1 {
-				println("\tACCEPT!")
-			}
-			return &$$stack[0]
-		}
-		switch $$error {
-		case 0: // new error
-			if $$Debug >= 1 {
-				println("\tERROR!")
-			}
-			msg := "unexpected " + $$Name[$$major]
-			var expect []int
-			if $$Reduce[$$state] == 0 {
-				$$n = $$Pact[$$state] + 3
-				for i := 3; i < $$Last; i++ {
-					if 0 <= $$n && $$n < len($$Action) && $$Check[$$n] == i && $$Action[$$n] != 0 {
-						expect = append(expect, i)
-						if len(expect) > 4 {
-							break
-						}
-					}
-					$$n++
-				}
-			}
-			if n := len(expect); 0 < n && n <= 4 {
-				for i, tok := range expect {
-					switch i {
-					case 0:
-						msg += ", expecting "
-					case n-1:
-						msg += " or "
-					default:
-						msg += ", "
-					}
-					msg += $$Name[tok]
-				}
-			}
-			$$lex.Error(msg)
-			fallthrough
-		case 1, 2: // partially recovered error
-			for { // pop states until error can be shifted
-				$$n = int($$Pact[$$state]) + 1
-				if 0 <= $$n && $$n < len($$Action) && $$Check[$$n] == 1 {
-					$$n = $$Action[$$n]
-					if $$n > 0 {
-						break
-					}
-				}
-				if len($$stack) == 0 {
-					return nil
-				}
-				if $$Debug >= 2 {
-					println("\tPopping state", $$state)
-				}
-				$$state = $$stack[len($$stack)-1].$$s
-				$$stack = $$stack[:len($$stack)-1]
-			}
-			$$error = 3
-			if $$Debug >= 1 {
-				println("\tSHIFT token error")
-			}
-			goto $$stack
-		default: // still waiting for valid tokens
-			if $$major == 0 { // no more tokens
-				return nil
-			}
-			if $$Debug >= 1 {
-				println("\tDISCARD token", $$Name[$$major])
-			}
-			$$major = -1
-			goto $$action
-		}
-	}
-	if $$Debug >= 1 {
-		println("\tREDUCE rule", $$n)
-	}
-	$$t = len($$stack) - int($$R2[$$n])
-	$$D = $$stack[$$t:]
-	if len($$D) > 0 { // pop items and restore state
-		$$val = $$D[0]
-		$$state = $$val.$$s
-		$$stack = $$stack[:$$t]
-	}
-	switch $$n { // Semantic actions
-`
-	const tmpl3 = `
-	}
-	// look up goto
-	$$t = int($$R1[$$n]) - $$Last
-	$$n = int($$Pgoto[$$t]) + $$state
-	if 0 <= $$n && $$n < len($$Action) &&
-		int($$Check[$$n]) == $$state {
-		$$n = int($$Action[$$n])
-	} else {
-		$$n = int($$Goto[$$t])
-	}
-	goto $$stack
-}
-`
-	w.WriteString(strings.Replace(tmpl1, "$$", g.Prefix, -1))
-	w.WriteString(g.union)
-	w.WriteString(strings.Replace(tmpl2, "$$", g.Prefix, -1))
-	g.dumpSemant(w)
-	w.WriteString(strings.Replace(tmpl3, "$$", g.Prefix, -1))
-}
-
-func (g *LRGen) dumpSemant(w *bufio.Writer) {
-	dump := func(prod *Prod) {
-		r := strings.NewReader(prod.Semant)
-		for {
-			ch, err := r.ReadByte()
-			if err != nil {
-				break
-			}
-			switch ch {
-			case '$':
-				var n int
-				_, err = fmt.Fscan(r, &n)
-				if err == nil {
-					n--
-					fmt.Fprintf(w, "%sD[%d]", g.Prefix, n)
-					if 0 <= n && n < len(prod.Rhs) && prod.Rhs[n].Type != "" {
-						fmt.Fprintf(w, ".%s", prod.Rhs[n].Type)
-					}
-				} else {
-					ch, err = r.ReadByte()
-					if err == nil {
-						if ch == '$' {
-							fmt.Fprintf(w, "%sval", g.Prefix)
-							if prod.Lhs.Type != "" {
-								fmt.Fprintf(w, ".%s", prod.Lhs.Type)
-							}
-						} else {
-							w.WriteByte('$')
-							w.WriteByte(ch)
-						}
-					}
-				}
-			default:
-				w.WriteByte(ch)
-			}
-		}
-	}
-	for i, prod := range g.pr.All {
-		if prod.Semant != NoSemant {
-			fmt.Fprintf(w, "\n\tcase %d:\n", i)
-			dump(prod)
-		} else if prod.Id != 0 {
-			t1 := prod.Lhs.Type
-			t2 := ""
-			if len(prod.Rhs) > 0 {
-				t2 = prod.Rhs[0].Type
-			}
-			if t1 != t2 {
-				fmt.Printf("Rule %d: default action may clobber type\n", prod.Id)
-			}
-		}
-	}
-}
