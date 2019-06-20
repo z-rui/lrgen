@@ -227,7 +227,7 @@ yy1fin:
 				}
 			}
 			if yy1text[0] == '@' {
-				ty = yy + "pos"
+				ty = yy + "p"
 			}
 			if ty != "" {
 				fmt.Fprintf(yy1lex.wr, ".%s", ty)

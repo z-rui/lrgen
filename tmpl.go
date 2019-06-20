@@ -8,7 +8,7 @@ var yyTmpl = template.Must(template.New("yyparse").Parse(`
 {{$yy := .Prefix}}
 type {{$yy}}SymType struct {
 	{{$yy}}s int
-	{{$yy}}pos int
+	{{$yy}}p int
 	{{.Union}}
 }
 
@@ -30,7 +30,6 @@ func {{$yy}}Parse({{$yy}}lex *{{$yy}}Lex) *{{$yy}}SymType {
 	goto {{$yy}}action
 {{$yy}}stack:
 	{{$yy}}val.{{$yy}}s = {{$yy}}state
-	{{$yy}}val.{{$yy}}pos = {{$yy}}lex.Pos
 	{{$yy}}stack = append({{$yy}}stack, {{$yy}}val)
 	{{$yy}}state = {{$yy}}n
 	if {{$yy}}Debug >= 2 {
@@ -72,6 +71,7 @@ func {{$yy}}Parse({{$yy}}lex *{{$yy}}Lex) *{{$yy}}SymType {
 		}
 		{{$yy}}major = -1
 		{{$yy}}val = {{$yy}}lval
+		{{$yy}}val.{{$yy}}p = {{$yy}}lex.Pos
 		goto {{$yy}}stack
 	}
 {{$yy}}default:
@@ -155,6 +155,8 @@ func {{$yy}}Parse({{$yy}}lex *{{$yy}}Lex) *{{$yy}}SymType {
 		{{$yy}}val = {{$yy}}D[0]
 		{{$yy}}state = {{$yy}}val.{{$yy}}s
 		{{$yy}}stack = {{$yy}}stack[:{{$yy}}t]
+	} else {
+		{{$yy}}val.{{$yy}}p = {{$yy}}lex.Pos
 	}
 	switch {{$yy}}n { // Semantic actions
 	{{- range .Rules }}{{ .Dump $yy }}{{ end }}
