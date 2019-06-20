@@ -33,7 +33,7 @@ id	[A-Z_a-z][A-Z_a-z0-9]*
 "{"	level = 1; BEGIN(codefrag)
 
 "//".*				// inline comment
-"/*"("*"*[^*/]+)*"*"+"/"	/* multi-line comment */
+"/*"("*"+[^*/]|[^*])*"*"+"/"	/* multi-line comment */
 [ \t\r\v\f\n]+			// white spaces
 
 <codefrag>"{"	level++; yymore()

@@ -31,13 +31,14 @@ type yy1Lex struct {
 	wr      io.Writer
 }
 
-func (l *yy1Lex) Init(r io.Reader) {
+func (l *yy1Lex) Init(r io.Reader) *yy1Lex {
 	l.Start = 0
 	l.Pos = 0
 	l.In = r
 	l.buf = make([]byte, 4096)
 	l.s, l.t, l.r, l.w = 0, 0, 0, 0
 	l.err = nil
+	return l
 }
 
 func (l *yy1Lex) ErrorAt(pos int, s string, v ...interface{}) {

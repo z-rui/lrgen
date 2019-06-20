@@ -25,13 +25,14 @@ type yyLex struct {
 	part    int
 }
 
-func (l *yyLex) Init(r io.Reader) {
+func (l *yyLex) Init(r io.Reader) *yyLex {
 	l.Start = 0
 	l.Pos = 0
 	l.In = r
 	l.buf = make([]byte, 4096)
 	l.s, l.t, l.r, l.w = 0, 0, 0, 0
 	l.err = nil
+	return l
 }
 
 func (l *yyLex) ErrorAt(pos int, s string, v ...interface{}) {
@@ -444,18 +445,12 @@ yyS21:
 	goto yyfin
 yyS22:
 	yyc = yylex.next()
-	if yyc < '+' {
-		if yyc < '*' {
-			if '\x00' <= yyc {
-				goto yyS22
-			}
-		} else {
-			goto yyS27
-		}
-	} else if yyc < '0' {
-		if yyc <= '.' {
+	if yyc < '*' {
+		if '\x00' <= yyc {
 			goto yyS22
 		}
+	} else if yyc < '+' {
+		goto yyS27
 	} else if yyc <= '\U0010ffff' {
 		goto yyS22
 	}

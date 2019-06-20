@@ -20,7 +20,8 @@ func main() {
 
 	var g LRGen
 	var err error
-	inFile, err := os.Open(flag.Arg(0))
+	g.Path = flag.Arg(0)
+	inFile, err := os.Open(g.Path)
 	if err != nil {
 		log.Fatal(err)
 	}
