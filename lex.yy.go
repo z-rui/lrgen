@@ -4,11 +4,10 @@ package main
 
 import (
 	"fmt"
-	"sort"
-	"os"
 	"io"
+	"os"
+	"sort"
 	"unicode/utf8"
-
 	// start condition
 )
 

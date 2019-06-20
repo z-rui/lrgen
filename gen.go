@@ -9,8 +9,8 @@ import (
 
 type LRGen struct {
 	yyLex
-	Token    int
-	yylval   yySymType
+	Token  int
+	yylval yySymType
 	StTab
 	Stat     io.Writer
 	Prefix   string // "yy" in yyParser
@@ -151,4 +151,3 @@ func (g *LRGen) dumpParser(w *bufio.Writer) {
 		g.Fatal(err.Error())
 	}
 }
-
