@@ -26,6 +26,7 @@ func (g *LRGen) syntaxError() {
 }
 
 func (g *LRGen) parse() {
+	g.yyLex.Start = 1 // start in copy mode
 	g.getToken()
 	g.parseTokDef()
 	g.parseRuleDef()

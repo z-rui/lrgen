@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+//go:generate lexgen -o lex.yy1 -p yy1 dump.l
+
 type Prod struct {
 	Id        int
 	Lhs       *Symbol
@@ -21,38 +23,9 @@ func (p *Prod) Dump(prefix string) string {
 		r := strings.NewReader(p.Semant)
 		w := new(strings.Builder)
 		fmt.Fprintf(w, "\n\tcase %d:\n", p.Id)
-		for {
-			ch, err := r.ReadByte()
-			if err != nil {
-				break
-			}
-			switch ch {
-			case '$':
-				var n int
-				_, err = fmt.Fscan(r, &n)
-				if err == nil {
-					n--
-					fmt.Fprintf(w, "%sD[%d]", prefix, n)
-					if 0 <= n && n < len(p.Rhs) && p.Rhs[n].Type != "" {
-						fmt.Fprintf(w, ".%s", p.Rhs[n].Type)
-					}
-				} else {
-					ch, err = r.ReadByte()
-					if err == nil {
-						if ch == '$' {
-							fmt.Fprintf(w, "%sval", prefix)
-							if p.Lhs.Type != "" {
-								fmt.Fprintf(w, ".%s", p.Lhs.Type)
-							}
-						} else {
-							w.WriteByte('$')
-							w.WriteByte(ch)
-						}
-					}
-				}
-			default:
-				w.WriteByte(ch)
-			}
+		l := &yy1Lex{prod: p, prefix: prefix, wr: w}
+		l.Init(r)
+		for l.Lex(nil) != 0 {
 		}
 		return w.String()
 	} else if p.Id != 0 {

@@ -7,18 +7,12 @@ package main
 
 id	[A-Z_a-z][A-Z_a-z0-9]*
 
-%x	codefrag copymode
+%x	copymode codefrag
 
 %%
 	level := 0
 
-"%%"	{
-	yylex.part++
-	if yylex.part < 2 {
-		return MARK
-	}
-	BEGIN(copymode)
-}
+"%%"	return MARK
 ":"	return COLON
 ";"	return SEMI
 "|"	return PIPE
@@ -55,10 +49,8 @@ id	[A-Z_a-z][A-Z_a-z0-9]*
 }
 <codefrag>[^{}]+	yymore()
 
-<copymode>(.|\n)*	{
-	yylex.Out.Write(yytext)
-	return 0
-}
+<copymode>"%%"\n	BEGIN(INITIAL)
+<copymode>.*\n		yylex.Out.Write(yytext)
 
 <*>.|\n	{
 	yylex.Error("invalid character")

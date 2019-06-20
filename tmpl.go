@@ -7,7 +7,8 @@ import (
 var yyTmpl = template.Must(template.New("yyparse").Parse(`
 {{$yy := .Prefix}}
 type {{$yy}}SymType struct {
-	{{$yy}}s int // state
+	{{$yy}}s int
+	{{$yy}}pos int
 	{{.Union}}
 }
 
@@ -29,6 +30,7 @@ func {{$yy}}Parse({{$yy}}lex *{{$yy}}Lex) *{{$yy}}SymType {
 	goto {{$yy}}action
 {{$yy}}stack:
 	{{$yy}}val.{{$yy}}s = {{$yy}}state
+	{{$yy}}val.{{$yy}}pos = {{$yy}}lex.Pos
 	{{$yy}}stack = append({{$yy}}stack, {{$yy}}val)
 	{{$yy}}state = {{$yy}}n
 	if {{$yy}}Debug >= 2 {

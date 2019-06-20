@@ -3,18 +3,19 @@
 package main
 
 import (
-	"unicode/utf8"
 	"fmt"
 	"sort"
 	"os"
 	"io"
+	"unicode/utf8"
 
 	// start condition
 )
 
 type yyLex struct {
 	Start   int32
-	Pos     int   // Position of current token
+	Path    string
+	Pos     int // position of current token
 	In      io.Reader
 	buf     []byte
 	linePos []int
@@ -43,7 +44,7 @@ func (l *yyLex) ErrorAt(pos int, s string, v ...interface{}) {
 	if lin > 0 {
 		col -= l.linePos[lin-1] + 1
 	}
-	fmt.Fprintf(os.Stderr, "%d:%d: %s\n", lin+1, col+1, s)
+	fmt.Fprintf(os.Stderr, "%s:%d:%d: %s\n", l.Path, lin+1, col+1, s)
 }
 
 func (l *yyLex) Error(s string) {
@@ -75,7 +76,7 @@ func (l *yyLex) fill() {
 	// update newline positions
 	for i := l.w; i < l.w+n; i++ {
 		if l.buf[i] == '\n' {
-			l.linePos = append(l.linePos, l.Pos+i)
+			l.linePos = append(l.linePos, l.Pos+(i-l.s))
 		}
 	}
 	l.w += n
@@ -102,8 +103,8 @@ func (l *yyLex) next() rune {
 func (yylex *yyLex) Lex(yylval *yySymType) int {
 	const (
 		INITIAL = iota
-		codefrag
 		copymode
+		codefrag
 	)
 	BEGIN := func(s int32) int32 {
 		yylex.Start, s = s, yylex.Start
@@ -202,17 +203,17 @@ yyS1:
 	goto yyfin
 yyS2:
 	yyc = yylex.next()
-	if yyc < '|' {
-		if yyc < '{' {
+	if yyc < '\v' {
+		if yyc < '\n' {
 			if '\x00' <= yyc {
 				goto yyS14
 			}
 		} else {
 			goto yyS15
 		}
-	} else if yyc < '}' {
+	} else if yyc < '%' {
 		goto yyS14
-	} else if yyc < '~' {
+	} else if yyc < '&' {
 		goto yyS16
 	} else if yyc <= '\U0010ffff' {
 		goto yyS14
@@ -220,16 +221,26 @@ yyS2:
 
 	goto yyfin
 yyS3:
-	yyacc = 14
-	yylex.t = yylex.r
 	yyc = yylex.next()
-	if '\x00' <= yyc && yyc <= '\U0010ffff' {
-		goto yyS3
+	if yyc < '|' {
+		if yyc < '{' {
+			if '\x00' <= yyc {
+				goto yyS17
+			}
+		} else {
+			goto yyS18
+		}
+	} else if yyc < '}' {
+		goto yyS17
+	} else if yyc < '~' {
+		goto yyS19
+	} else if yyc <= '\U0010ffff' {
+		goto yyS17
 	}
 
 	goto yyfin
 yyS4:
-	yyacc = 15
+	yyacc = 16
 	yylex.t = yylex.r
 
 	goto yyfin
@@ -247,36 +258,36 @@ yyS5:
 
 	goto yyfin
 yyS6:
-	yyacc = 15
+	yyacc = 16
 	yylex.t = yylex.r
 	yyc = yylex.next()
 	if yyc < '_' {
 		if yyc < 'A' {
 			if '%' <= yyc && yyc <= '%' {
-				goto yyS17
+				goto yyS20
 			}
 		} else if yyc <= 'Z' {
-			goto yyS18
+			goto yyS21
 		}
 	} else if yyc < 'a' {
 		if yyc <= '_' {
-			goto yyS18
+			goto yyS21
 		}
 	} else if yyc <= 'z' {
-		goto yyS18
+		goto yyS21
 	}
 
 	goto yyfin
 yyS7:
-	yyacc = 15
+	yyacc = 16
 	yylex.t = yylex.r
 	yyc = yylex.next()
 	if yyc < '/' {
 		if '*' <= yyc && yyc <= '*' {
-			goto yyS19
+			goto yyS22
 		}
 	} else if yyc <= '/' {
-		goto yyS20
+		goto yyS23
 	}
 
 	goto yyfin
@@ -291,19 +302,19 @@ yyS9:
 
 	goto yyfin
 yyS10:
-	yyacc = 15
+	yyacc = 16
 	yylex.t = yylex.r
 	yyc = yylex.next()
 	if yyc < '\v' {
 		if '\x00' <= yyc && yyc <= '\t' {
-			goto yyS21
+			goto yyS24
 		}
 	} else if yyc < '?' {
 		if yyc <= '=' {
-			goto yyS21
+			goto yyS24
 		}
 	} else if yyc <= '\U0010ffff' {
-		goto yyS21
+		goto yyS24
 	}
 
 	goto yyfin
@@ -339,103 +350,95 @@ yyS13:
 
 	goto yyfin
 yyS14:
+	yyacc = 16
+	yylex.t = yylex.r
+	yyc = yylex.next()
+	if yyc < '\n' {
+		if '\x00' <= yyc {
+			goto yyS25
+		}
+	} else if yyc < '\v' {
+		goto yyS15
+	} else if yyc <= '\U0010ffff' {
+		goto yyS25
+	}
+
+	goto yyfin
+yyS15:
+	yyacc = 15
+	yylex.t = yylex.r
+
+	goto yyfin
+yyS16:
+	yyacc = 16
+	yylex.t = yylex.r
+	yyc = yylex.next()
+	if yyc < '\v' {
+		if yyc < '\n' {
+			if '\x00' <= yyc {
+				goto yyS25
+			}
+		} else {
+			goto yyS15
+		}
+	} else if yyc < '%' {
+		goto yyS25
+	} else if yyc < '&' {
+		goto yyS26
+	} else if yyc <= '\U0010ffff' {
+		goto yyS25
+	}
+
+	goto yyfin
+yyS17:
 	yyacc = 13
 	yylex.t = yylex.r
 	yyc = yylex.next()
 	if yyc < '|' {
 		if '\x00' <= yyc && yyc <= 'z' {
-			goto yyS14
+			goto yyS17
 		}
 	} else if yyc < '~' {
 		if yyc <= '|' {
-			goto yyS14
+			goto yyS17
 		}
 	} else if yyc <= '\U0010ffff' {
-		goto yyS14
+		goto yyS17
 	}
 
 	goto yyfin
-yyS15:
+yyS18:
 	yyacc = 11
 	yylex.t = yylex.r
 
 	goto yyfin
-yyS16:
+yyS19:
 	yyacc = 12
 	yylex.t = yylex.r
 
 	goto yyfin
-yyS17:
+yyS20:
 	yyacc = 0
 	yylex.t = yylex.r
 
 	goto yyfin
-yyS18:
+yyS21:
 	yyacc = 5
 	yylex.t = yylex.r
 	yyc = yylex.next()
 	if yyc < '_' {
 		if yyc < 'A' {
 			if '0' <= yyc && yyc <= '9' {
-				goto yyS18
+				goto yyS21
 			}
 		} else if yyc <= 'Z' {
-			goto yyS18
+			goto yyS21
 		}
 	} else if yyc < 'a' {
 		if yyc <= '_' {
-			goto yyS18
-		}
-	} else if yyc <= 'z' {
-		goto yyS18
-	}
-
-	goto yyfin
-yyS19:
-	yyc = yylex.next()
-	if yyc < '+' {
-		if yyc < '*' {
-			if '\x00' <= yyc {
-				goto yyS19
-			}
-		} else {
-			goto yyS22
-		}
-	} else if yyc < '0' {
-		if yyc <= '.' {
-			goto yyS19
-		}
-	} else if yyc <= '\U0010ffff' {
-		goto yyS19
-	}
-
-	goto yyfin
-yyS20:
-	yyacc = 8
-	yylex.t = yylex.r
-	yyc = yylex.next()
-	if yyc < '\v' {
-		if '\x00' <= yyc && yyc <= '\t' {
-			goto yyS20
-		}
-	} else if yyc <= '\U0010ffff' {
-		goto yyS20
-	}
-
-	goto yyfin
-yyS21:
-	yyc = yylex.next()
-	if yyc < '>' {
-		if yyc < '\v' {
-			if '\x00' <= yyc && yyc <= '\t' {
-				goto yyS21
-			}
-		} else {
 			goto yyS21
 		}
-	} else if yyc < '?' {
-		goto yyS23
-	} else if yyc <= '\U0010ffff' {
+	} else if yyc <= 'z' {
 		goto yyS21
 	}
 
@@ -445,26 +448,106 @@ yyS22:
 	if yyc < '+' {
 		if yyc < '*' {
 			if '\x00' <= yyc {
-				goto yyS19
+				goto yyS22
 			}
 		} else {
+			goto yyS27
+		}
+	} else if yyc < '0' {
+		if yyc <= '.' {
 			goto yyS22
 		}
-	} else if yyc < '/' {
-		goto yyS19
-	} else if yyc < '0' {
-		goto yyS24
 	} else if yyc <= '\U0010ffff' {
-		goto yyS19
+		goto yyS22
 	}
 
 	goto yyfin
 yyS23:
+	yyacc = 8
+	yylex.t = yylex.r
+	yyc = yylex.next()
+	if yyc < '\v' {
+		if '\x00' <= yyc && yyc <= '\t' {
+			goto yyS23
+		}
+	} else if yyc <= '\U0010ffff' {
+		goto yyS23
+	}
+
+	goto yyfin
+yyS24:
+	yyc = yylex.next()
+	if yyc < '>' {
+		if yyc < '\v' {
+			if '\x00' <= yyc && yyc <= '\t' {
+				goto yyS24
+			}
+		} else {
+			goto yyS24
+		}
+	} else if yyc < '?' {
+		goto yyS28
+	} else if yyc <= '\U0010ffff' {
+		goto yyS24
+	}
+
+	goto yyfin
+yyS25:
+	yyc = yylex.next()
+	if yyc < '\n' {
+		if '\x00' <= yyc {
+			goto yyS25
+		}
+	} else if yyc < '\v' {
+		goto yyS15
+	} else if yyc <= '\U0010ffff' {
+		goto yyS25
+	}
+
+	goto yyfin
+yyS26:
+	yyc = yylex.next()
+	if yyc < '\n' {
+		if '\x00' <= yyc {
+			goto yyS25
+		}
+	} else if yyc < '\v' {
+		goto yyS29
+	} else if yyc <= '\U0010ffff' {
+		goto yyS25
+	}
+
+	goto yyfin
+yyS27:
+	yyc = yylex.next()
+	if yyc < '+' {
+		if yyc < '*' {
+			if '\x00' <= yyc {
+				goto yyS22
+			}
+		} else {
+			goto yyS27
+		}
+	} else if yyc < '/' {
+		goto yyS22
+	} else if yyc < '0' {
+		goto yyS30
+	} else if yyc <= '\U0010ffff' {
+		goto yyS22
+	}
+
+	goto yyfin
+yyS28:
 	yyacc = 6
 	yylex.t = yylex.r
 
 	goto yyfin
-yyS24:
+yyS29:
+	yyacc = 14
+	yylex.t = yylex.r
+
+	goto yyfin
+yyS30:
 	yyacc = 9
 	yylex.t = yylex.r
 
@@ -481,13 +564,7 @@ yyfin:
 	}
 	switch yyacc {
 	case 0:
-		{
-			yylex.part++
-			if yylex.part < 2 {
-				return MARK
-			}
-			BEGIN(copymode)
-		}
+		return MARK
 	case 1:
 		return COLON
 	case 2:
@@ -535,11 +612,10 @@ yyfin:
 	case 13:
 		yymore()
 	case 14:
-		{
-			yylex.Out.Write(yytext)
-			return 0
-		}
+		BEGIN(INITIAL)
 	case 15:
+		yylex.Out.Write(yytext)
+	case 16:
 		{
 			yylex.Error("invalid character")
 		}
