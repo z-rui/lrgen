@@ -23,13 +23,12 @@ func (p *Prod) Dump(prefix string) string {
 		r := strings.NewReader(p.Semant)
 		w := new(strings.Builder)
 		fmt.Fprintf(w, "\n\tcase %d:\n", p.Id)
-		l := &yy1Lex{prod: p, prefix: prefix, wr: w}
+		l := &yy1Lex{prod: p, wr: w}
 		l.Init(r)
 		for l.Lex(nil) != 0 {
 		}
 		return w.String()
-	} else if p.Id != 0 {
-		t1 := p.Lhs.Type
+	} else if t1 := p.Lhs.Type; t1 != "" {
 		t2 := ""
 		if len(p.Rhs) > 0 {
 			t2 = p.Rhs[0].Type

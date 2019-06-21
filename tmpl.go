@@ -7,8 +7,7 @@ import (
 var yyTmpl = template.Must(template.New("yyparse").Parse(`
 {{$yy := .Prefix}}
 type {{$yy}}SymType struct {
-	{{$yy}}s int
-	{{$yy}}p int
+	yys, yyp int
 	{{.Union}}
 }
 
@@ -16,85 +15,85 @@ var {{$yy}}Debug = 0 // debug info from parser
 
 // {{$yy}}Parse read tokens from {{$yy}}lex and parses input.
 // Returns result on success, or nil on failure.
-func {{$yy}}Parse({{$yy}}lex *{{$yy}}Lex) *{{$yy}}SymType {
+func {{$yy}}Parse(yy *{{$yy}}Lex) *{{$yy}}SymType {
 	var (
-		{{$yy}}n, {{$yy}}t int
-		{{$yy}}state  = 0
-		{{$yy}}error  = 0
-		{{$yy}}major  = -1
-		{{$yy}}stack  []{{$yy}}SymType
-		{{$yy}}D      []{{$yy}}SymType // rhs of reduction
-		{{$yy}}lval   {{$yy}}SymType   // lexcial value from lexer
-		{{$yy}}val    {{$yy}}SymType   // value to be pushed onto stack
+		yyn, yyt int
+		yystate  = 0
+		yyerror  = 0
+		yymajor  = -1
+		yystack  []{{$yy}}SymType
+		yyD      []{{$yy}}SymType // rhs of reduction
+		yylval   {{$yy}}SymType   // lexcial value from lexer
+		yyval    {{$yy}}SymType   // value to be pushed onto stack
 	)
-	goto {{$yy}}action
-{{$yy}}stack:
-	{{$yy}}val.{{$yy}}s = {{$yy}}state
-	{{$yy}}stack = append({{$yy}}stack, {{$yy}}val)
-	{{$yy}}state = {{$yy}}n
+	goto yyaction
+yystack:
+	yyval.yys = yystate
+	yystack = append(yystack, yyval)
+	yystate = yyn
 	if {{$yy}}Debug >= 2 {
-		println("\tGOTO state", {{$yy}}n)
+		println("\tGOTO state", yyn)
 	}
-{{$yy}}action:
+yyaction:
 	// look up shift or reduce
-	{{$yy}}n = int({{$yy}}Pact[{{$yy}}state])
-	if {{$yy}}n == len({{$yy}}Action) && {{$yy}}state != {{$yy}}Accept { // simple state
-		goto {{$yy}}default
+	yyn = int({{$yy}}Pact[yystate])
+	if yyn == len({{$yy}}Action) && yystate != {{$yy}}Accept { // simple state
+		goto yydefault
 	}
-	if {{$yy}}major < 0 {
-		{{$yy}}major = {{$yy}}lex.Lex(&{{$yy}}lval)
+	if yymajor < 0 {
+		yymajor = yy.Lex(&yylval)
 		if {{$yy}}Debug >= 1 {
-			println("In state", {{$yy}}state)
+			println("In state", yystate)
 		}
 		if {{$yy}}Debug >= 2 {
-			println("\tInput token", {{$yy}}Name[{{$yy}}major])
+			println("\tInput token", {{$yy}}Name[yymajor])
 		}
 	}
-	if {{$yy}}major == 0 && {{$yy}}state == {{$yy}}Accept {
+	if yymajor == 0 && yystate == {{$yy}}Accept {
 		if {{$yy}}Debug >= 1 {
 			println("\tACCEPT!")
 		}
-		return &{{$yy}}stack[0]
+		return &yystack[0]
 	}
-	{{$yy}}n += {{$yy}}major
-	if 0 <= {{$yy}}n && {{$yy}}n < len({{$yy}}Action) && int({{$yy}}Check[{{$yy}}n]) == {{$yy}}major {
-		{{$yy}}n = int({{$yy}}Action[{{$yy}}n])
-		if {{$yy}}n <= 0 {
-			{{$yy}}n = -{{$yy}}n
-			goto {{$yy}}reduce
+	yyn += yymajor
+	if 0 <= yyn && yyn < len({{$yy}}Action) && int({{$yy}}Check[yyn]) == yymajor {
+		yyn = int({{$yy}}Action[yyn])
+		if yyn <= 0 {
+			yyn = -yyn
+			goto yyreduce
 		}
 		if {{$yy}}Debug >= 1 {
-			println("\tSHIFT token", {{$yy}}Name[{{$yy}}major])
+			println("\tSHIFT token", {{$yy}}Name[yymajor])
 		}
-		if {{$yy}}error > 0 {
-			{{$yy}}error--
+		if yyerror > 0 {
+			yyerror--
 		}
-		{{$yy}}major = -1
-		{{$yy}}val = {{$yy}}lval
-		{{$yy}}val.{{$yy}}p = {{$yy}}lex.Pos
-		goto {{$yy}}stack
+		yymajor = -1
+		yyval = yylval
+		yyval.yyp = yy.Pos
+		goto yystack
 	}
-{{$yy}}default:
-	{{$yy}}n = int({{$yy}}Reduce[{{$yy}}state])
-{{$yy}}reduce:
-	if {{$yy}}n == 0 {
-		switch {{$yy}}error {
+yydefault:
+	yyn = int({{$yy}}Reduce[yystate])
+yyreduce:
+	if yyn == 0 {
+		switch yyerror {
 		case 0: // new error
 			if {{$yy}}Debug >= 1 {
 				println("\tERROR!")
 			}
-			msg := "unexpected " + {{$yy}}Name[{{$yy}}major]
+			msg := "unexpected " + {{$yy}}Name[yymajor]
 			var expect []int
-			if {{$yy}}Reduce[{{$yy}}state] == 0 {
-				{{$yy}}n = {{$yy}}Pact[{{$yy}}state] + 3
+			if {{$yy}}Reduce[yystate] == 0 {
+				yyn = {{$yy}}Pact[yystate] + 3
 				for i := 3; i < {{$yy}}Last; i++ {
-					if 0 <= {{$yy}}n && {{$yy}}n < len({{$yy}}Action) && {{$yy}}Check[{{$yy}}n] == i && {{$yy}}Action[{{$yy}}n] != 0 {
+					if 0 <= yyn && yyn < len({{$yy}}Action) && {{$yy}}Check[yyn] == i && {{$yy}}Action[yyn] != 0 {
 						expect = append(expect, i)
 						if len(expect) > 4 {
 							break
 						}
 					}
-					{{$yy}}n++
+					yyn++
 				}
 			}
 			if n := len(expect); 0 < n && n <= 4 {
@@ -110,66 +109,66 @@ func {{$yy}}Parse({{$yy}}lex *{{$yy}}Lex) *{{$yy}}SymType {
 					msg += {{$yy}}Name[tok]
 				}
 			}
-			{{$yy}}lex.Error(msg)
+			yy.Error(msg)
 			fallthrough
 		case 1, 2: // partially recovered error
 			for { // pop states until error can be shifted
-				{{$yy}}n = int({{$yy}}Pact[{{$yy}}state]) + 1
-				if 0 <= {{$yy}}n && {{$yy}}n < len({{$yy}}Action) && {{$yy}}Check[{{$yy}}n] == 1 {
-					{{$yy}}n = {{$yy}}Action[{{$yy}}n]
-					if {{$yy}}n > 0 {
+				yyn = int({{$yy}}Pact[yystate]) + 1
+				if 0 <= yyn && yyn < len({{$yy}}Action) && {{$yy}}Check[yyn] == 1 {
+					yyn = {{$yy}}Action[yyn]
+					if yyn > 0 {
 						break
 					}
 				}
-				if len({{$yy}}stack) == 0 {
+				if len(yystack) == 0 {
 					return nil
 				}
 				if {{$yy}}Debug >= 2 {
-					println("\tPopping state", {{$yy}}state)
+					println("\tPopping state", yystate)
 				}
-				{{$yy}}state = {{$yy}}stack[len({{$yy}}stack)-1].{{$yy}}s
-				{{$yy}}stack = {{$yy}}stack[:len({{$yy}}stack)-1]
+				yystate = yystack[len(yystack)-1].yys
+				yystack = yystack[:len(yystack)-1]
 			}
-			{{$yy}}error = 3
+			yyerror = 3
 			if {{$yy}}Debug >= 1 {
 				println("\tSHIFT token error")
 			}
-			goto {{$yy}}stack
+			goto yystack
 		default: // still waiting for valid tokens
-			if {{$yy}}major == 0 { // no more tokens
+			if yymajor == 0 { // no more tokens
 				return nil
 			}
 			if {{$yy}}Debug >= 1 {
-				println("\tDISCARD token", {{$yy}}Name[{{$yy}}major])
+				println("\tDISCARD token", {{$yy}}Name[yymajor])
 			}
-			{{$yy}}major = -1
-			goto {{$yy}}action
+			yymajor = -1
+			goto yyaction
 		}
 	}
 	if {{$yy}}Debug >= 1 {
-		println("\tREDUCE rule", {{$yy}}n)
+		println("\tREDUCE rule", yyn)
 	}
-	{{$yy}}t = len({{$yy}}stack) - int({{$yy}}R2[{{$yy}}n])
-	{{$yy}}D = {{$yy}}stack[{{$yy}}t:]
-	if len({{$yy}}D) > 0 { // pop items and restore state
-		{{$yy}}val = {{$yy}}D[0]
-		{{$yy}}state = {{$yy}}val.{{$yy}}s
-		{{$yy}}stack = {{$yy}}stack[:{{$yy}}t]
+	yyt = len(yystack) - int({{$yy}}R2[yyn])
+	yyD = yystack[yyt:]
+	if len(yyD) > 0 { // pop items and restore state
+		yyval = yyD[0]
+		yystate = yyval.yys
+		yystack = yystack[:yyt]
 	} else {
-		{{$yy}}val.{{$yy}}p = {{$yy}}lex.Pos
+		yyval.yyp = yy.Pos
 	}
-	switch {{$yy}}n { // Semantic actions
+	switch yyn { // Semantic actions
 	{{- range .Rules }}{{ .Dump $yy }}{{ end }}
 	}
 	// look up goto
-	{{$yy}}t = int({{$yy}}R1[{{$yy}}n]) - {{$yy}}Last
-	{{$yy}}n = int({{$yy}}Pgoto[{{$yy}}t]) + {{$yy}}state
-	if 0 <= {{$yy}}n && {{$yy}}n < len({{$yy}}Action) &&
-		int({{$yy}}Check[{{$yy}}n]) == {{$yy}}state {
-		{{$yy}}n = int({{$yy}}Action[{{$yy}}n])
+	yyt = int({{$yy}}R1[yyn]) - {{$yy}}Last
+	yyn = int({{$yy}}Pgoto[yyt]) + yystate
+	if 0 <= yyn && yyn < len({{$yy}}Action) &&
+		int({{$yy}}Check[yyn]) == yystate {
+		yyn = int({{$yy}}Action[yyn])
 	} else {
-		{{$yy}}n = int({{$yy}}Goto[{{$yy}}t])
+		yyn = int({{$yy}}Goto[yyt])
 	}
-	goto {{$yy}}stack
+	goto yystack
 }
 `))

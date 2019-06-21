@@ -100,33 +100,33 @@ func (l *yyLex) next() rune {
 	return c
 }
 
-func (yylex *yyLex) Lex(yylval *yySymType) int {
+func (yy *yyLex) Lex(yylval *yySymType) int {
 	const (
 		INITIAL = iota
 		copymode
 		codefrag
 	)
 	BEGIN := func(s int32) int32 {
-		yylex.Start, s = s, yylex.Start
+		yy.Start, s = s, yy.Start
 		return s
 	}
 	_ = BEGIN
 	yyless := func(n int) {
-		n += yylex.s
-		yylex.t = n
-		yylex.r = n
+		n += yy.s
+		yy.t = n
+		yy.r = n
 	}
 	_ = yyless
-	yymore := func() { yylex.t = yylex.s }
+	yymore := func() { yy.t = yy.s }
 	_ = yymore
 	level := 0
 
 yyS0:
-	yylex.Pos += yylex.t - yylex.s
-	yylex.s = yylex.t
+	yy.Pos += yy.t - yy.s
+	yy.s = yy.t
 	yyacc := -1
-	yylex.t = yylex.r
-	yyc := yylex.Start
+	yy.t = yy.r
+	yyc := yy.Start
 	if yyc < '\x01' {
 		if '\x00' <= yyc {
 			goto yyS1
@@ -139,7 +139,7 @@ yyS0:
 
 	goto yyfin
 yyS1:
-	yyc = yylex.next()
+	yyc = yy.next()
 	if yyc < ';' {
 		if yyc < '%' {
 			if yyc < '\x0e' {
@@ -202,7 +202,7 @@ yyS1:
 
 	goto yyfin
 yyS2:
-	yyc = yylex.next()
+	yyc = yy.next()
 	if yyc < '\v' {
 		if yyc < '\n' {
 			if '\x00' <= yyc {
@@ -221,7 +221,7 @@ yyS2:
 
 	goto yyfin
 yyS3:
-	yyc = yylex.next()
+	yyc = yy.next()
 	if yyc < '|' {
 		if yyc < '{' {
 			if '\x00' <= yyc {
@@ -241,13 +241,13 @@ yyS3:
 	goto yyfin
 yyS4:
 	yyacc = 16
-	yylex.t = yylex.r
+	yy.t = yy.r
 
 	goto yyfin
 yyS5:
 	yyacc = 10
-	yylex.t = yylex.r
-	yyc = yylex.next()
+	yy.t = yy.r
+	yyc = yy.next()
 	if yyc < ' ' {
 		if '\t' <= yyc && yyc <= '\r' {
 			goto yyS5
@@ -259,8 +259,8 @@ yyS5:
 	goto yyfin
 yyS6:
 	yyacc = 16
-	yylex.t = yylex.r
-	yyc = yylex.next()
+	yy.t = yy.r
+	yyc = yy.next()
 	if yyc < '_' {
 		if yyc < 'A' {
 			if '%' <= yyc && yyc <= '%' {
@@ -280,8 +280,8 @@ yyS6:
 	goto yyfin
 yyS7:
 	yyacc = 16
-	yylex.t = yylex.r
-	yyc = yylex.next()
+	yy.t = yy.r
+	yyc = yy.next()
 	if yyc < '/' {
 		if '*' <= yyc && yyc <= '*' {
 			goto yyS22
@@ -293,18 +293,18 @@ yyS7:
 	goto yyfin
 yyS8:
 	yyacc = 1
-	yylex.t = yylex.r
+	yy.t = yy.r
 
 	goto yyfin
 yyS9:
 	yyacc = 2
-	yylex.t = yylex.r
+	yy.t = yy.r
 
 	goto yyfin
 yyS10:
 	yyacc = 16
-	yylex.t = yylex.r
-	yyc = yylex.next()
+	yy.t = yy.r
+	yyc = yy.next()
 	if yyc < '\v' {
 		if '\x00' <= yyc && yyc <= '\t' {
 			goto yyS24
@@ -320,8 +320,8 @@ yyS10:
 	goto yyfin
 yyS11:
 	yyacc = 4
-	yylex.t = yylex.r
-	yyc = yylex.next()
+	yy.t = yy.r
+	yyc = yy.next()
 	if yyc < '_' {
 		if yyc < 'A' {
 			if '0' <= yyc && yyc <= '9' {
@@ -341,18 +341,18 @@ yyS11:
 	goto yyfin
 yyS12:
 	yyacc = 7
-	yylex.t = yylex.r
+	yy.t = yy.r
 
 	goto yyfin
 yyS13:
 	yyacc = 3
-	yylex.t = yylex.r
+	yy.t = yy.r
 
 	goto yyfin
 yyS14:
 	yyacc = 16
-	yylex.t = yylex.r
-	yyc = yylex.next()
+	yy.t = yy.r
+	yyc = yy.next()
 	if yyc < '\n' {
 		if '\x00' <= yyc {
 			goto yyS25
@@ -366,13 +366,13 @@ yyS14:
 	goto yyfin
 yyS15:
 	yyacc = 15
-	yylex.t = yylex.r
+	yy.t = yy.r
 
 	goto yyfin
 yyS16:
 	yyacc = 16
-	yylex.t = yylex.r
-	yyc = yylex.next()
+	yy.t = yy.r
+	yyc = yy.next()
 	if yyc < '\v' {
 		if yyc < '\n' {
 			if '\x00' <= yyc {
@@ -392,8 +392,8 @@ yyS16:
 	goto yyfin
 yyS17:
 	yyacc = 13
-	yylex.t = yylex.r
-	yyc = yylex.next()
+	yy.t = yy.r
+	yyc = yy.next()
 	if yyc < '|' {
 		if '\x00' <= yyc && yyc <= 'z' {
 			goto yyS17
@@ -409,23 +409,23 @@ yyS17:
 	goto yyfin
 yyS18:
 	yyacc = 11
-	yylex.t = yylex.r
+	yy.t = yy.r
 
 	goto yyfin
 yyS19:
 	yyacc = 12
-	yylex.t = yylex.r
+	yy.t = yy.r
 
 	goto yyfin
 yyS20:
 	yyacc = 0
-	yylex.t = yylex.r
+	yy.t = yy.r
 
 	goto yyfin
 yyS21:
 	yyacc = 5
-	yylex.t = yylex.r
-	yyc = yylex.next()
+	yy.t = yy.r
+	yyc = yy.next()
 	if yyc < '_' {
 		if yyc < 'A' {
 			if '0' <= yyc && yyc <= '9' {
@@ -444,7 +444,7 @@ yyS21:
 
 	goto yyfin
 yyS22:
-	yyc = yylex.next()
+	yyc = yy.next()
 	if yyc < '*' {
 		if '\x00' <= yyc {
 			goto yyS22
@@ -458,8 +458,8 @@ yyS22:
 	goto yyfin
 yyS23:
 	yyacc = 8
-	yylex.t = yylex.r
-	yyc = yylex.next()
+	yy.t = yy.r
+	yyc = yy.next()
 	if yyc < '\v' {
 		if '\x00' <= yyc && yyc <= '\t' {
 			goto yyS23
@@ -470,7 +470,7 @@ yyS23:
 
 	goto yyfin
 yyS24:
-	yyc = yylex.next()
+	yyc = yy.next()
 	if yyc < '>' {
 		if yyc < '\v' {
 			if '\x00' <= yyc && yyc <= '\t' {
@@ -487,7 +487,7 @@ yyS24:
 
 	goto yyfin
 yyS25:
-	yyc = yylex.next()
+	yyc = yy.next()
 	if yyc < '\n' {
 		if '\x00' <= yyc {
 			goto yyS25
@@ -500,7 +500,7 @@ yyS25:
 
 	goto yyfin
 yyS26:
-	yyc = yylex.next()
+	yyc = yy.next()
 	if yyc < '\n' {
 		if '\x00' <= yyc {
 			goto yyS25
@@ -513,7 +513,7 @@ yyS26:
 
 	goto yyfin
 yyS27:
-	yyc = yylex.next()
+	yyc = yy.next()
 	if yyc < '+' {
 		if yyc < '*' {
 			if '\x00' <= yyc {
@@ -533,25 +533,25 @@ yyS27:
 	goto yyfin
 yyS28:
 	yyacc = 6
-	yylex.t = yylex.r
+	yy.t = yy.r
 
 	goto yyfin
 yyS29:
 	yyacc = 14
-	yylex.t = yylex.r
+	yy.t = yy.r
 
 	goto yyfin
 yyS30:
 	yyacc = 9
-	yylex.t = yylex.r
+	yy.t = yy.r
 
 	goto yyfin
 
 yyfin:
-	yylex.r = yylex.t // put back read-ahead bytes
-	yytext := yylex.buf[yylex.s:yylex.r]
+	yy.r = yy.t // put back read-ahead bytes
+	yytext := yy.buf[yy.s:yy.r]
 	if len(yytext) == 0 {
-		if yylex.err != nil {
+		if yy.err != nil {
 			return 0
 		}
 		panic("scanner is jammed")
@@ -608,10 +608,10 @@ yyfin:
 	case 14:
 		BEGIN(INITIAL)
 	case 15:
-		yylex.Out.Write(yytext)
+		yy.Out.Write(yytext)
 	case 16:
 		{
-			yylex.Error("invalid character")
+			yy.Error("invalid character")
 		}
 	}
 	goto yyS0

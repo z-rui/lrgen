@@ -27,7 +27,6 @@ type yy1Lex struct {
 	r, w    int // buf[r:w] == buffered text
 	err     error
 	prod    *Prod
-	prefix  string
 	wr      io.Writer
 }
 
@@ -106,137 +105,136 @@ func (l *yy1Lex) next() rune {
 	return c
 }
 
-func (yy1lex *yy1Lex) Lex(yy1lval *yy1SymType) int {
+func (yy *yy1Lex) Lex(yylval *yy1SymType) int {
 	const (
 		INITIAL = iota
 	)
 	BEGIN := func(s int32) int32 {
-		yy1lex.Start, s = s, yy1lex.Start
+		yy.Start, s = s, yy.Start
 		return s
 	}
 	_ = BEGIN
-	yy1less := func(n int) {
-		n += yy1lex.s
-		yy1lex.t = n
-		yy1lex.r = n
+	yyless := func(n int) {
+		n += yy.s
+		yy.t = n
+		yy.r = n
 	}
-	_ = yy1less
-	yy1more := func() { yy1lex.t = yy1lex.s }
-	_ = yy1more
+	_ = yyless
+	yymore := func() { yy.t = yy.s }
+	_ = yymore
 
-yy1S0:
-	yy1lex.Pos += yy1lex.t - yy1lex.s
-	yy1lex.s = yy1lex.t
-	yy1acc := -1
-	yy1lex.t = yy1lex.r
-	yy1c := yy1lex.Start
-	if '\x00' <= yy1c && yy1c <= '\x00' {
-		goto yy1S1
+yyS0:
+	yy.Pos += yy.t - yy.s
+	yy.s = yy.t
+	yyacc := -1
+	yy.t = yy.r
+	yyc := yy.Start
+	if '\x00' <= yyc && yyc <= '\x00' {
+		goto yyS1
 	}
 
-	goto yy1fin
-yy1S1:
-	yy1c = yy1lex.next()
-	if yy1c < '%' {
-		if yy1c < '$' {
-			if '\x00' <= yy1c {
-				goto yy1S2
+	goto yyfin
+yyS1:
+	yyc = yy.next()
+	if yyc < '%' {
+		if yyc < '$' {
+			if '\x00' <= yyc {
+				goto yyS2
 			}
 		} else {
-			goto yy1S3
+			goto yyS3
 		}
-	} else if yy1c < '@' {
-		goto yy1S2
-	} else if yy1c < 'A' {
-		goto yy1S3
-	} else if yy1c <= '\U0010ffff' {
-		goto yy1S2
+	} else if yyc < '@' {
+		goto yyS2
+	} else if yyc < 'A' {
+		goto yyS3
+	} else if yyc <= '\U0010ffff' {
+		goto yyS2
 	}
 
-	goto yy1fin
-yy1S2:
-	yy1acc = 1
-	yy1lex.t = yy1lex.r
-	yy1c = yy1lex.next()
-	if yy1c < '%' {
-		if '\x00' <= yy1c && yy1c <= '#' {
-			goto yy1S2
+	goto yyfin
+yyS2:
+	yyacc = 1
+	yy.t = yy.r
+	yyc = yy.next()
+	if yyc < '%' {
+		if '\x00' <= yyc && yyc <= '#' {
+			goto yyS2
 		}
-	} else if yy1c < 'A' {
-		if yy1c <= '?' {
-			goto yy1S2
+	} else if yyc < 'A' {
+		if yyc <= '?' {
+			goto yyS2
 		}
-	} else if yy1c <= '\U0010ffff' {
-		goto yy1S2
+	} else if yyc <= '\U0010ffff' {
+		goto yyS2
 	}
 
-	goto yy1fin
-yy1S3:
-	yy1acc = 1
-	yy1lex.t = yy1lex.r
-	yy1c = yy1lex.next()
-	if yy1c < '0' {
-		if '$' <= yy1c && yy1c <= '$' {
-			goto yy1S4
+	goto yyfin
+yyS3:
+	yyacc = 1
+	yy.t = yy.r
+	yyc = yy.next()
+	if yyc < '0' {
+		if '$' <= yyc && yyc <= '$' {
+			goto yyS4
 		}
-	} else if yy1c <= '9' {
-		goto yy1S5
+	} else if yyc <= '9' {
+		goto yyS5
 	}
 
-	goto yy1fin
-yy1S4:
-	yy1acc = 0
-	yy1lex.t = yy1lex.r
+	goto yyfin
+yyS4:
+	yyacc = 0
+	yy.t = yy.r
 
-	goto yy1fin
-yy1S5:
-	yy1acc = 0
-	yy1lex.t = yy1lex.r
-	yy1c = yy1lex.next()
-	if '0' <= yy1c && yy1c <= '9' {
-		goto yy1S5
+	goto yyfin
+yyS5:
+	yyacc = 0
+	yy.t = yy.r
+	yyc = yy.next()
+	if '0' <= yyc && yyc <= '9' {
+		goto yyS5
 	}
 
-	goto yy1fin
+	goto yyfin
 
-yy1fin:
-	yy1lex.r = yy1lex.t // put back read-ahead bytes
-	yy1text := yy1lex.buf[yy1lex.s:yy1lex.r]
-	if len(yy1text) == 0 {
-		if yy1lex.err != nil {
+yyfin:
+	yy.r = yy.t // put back read-ahead bytes
+	yytext := yy.buf[yy.s:yy.r]
+	if len(yytext) == 0 {
+		if yy.err != nil {
 			return 0
 		}
 		panic("scanner is jammed")
 	}
-	switch yy1acc {
+	switch yyacc {
 	case 0:
 		{
-			yy := yy1lex.prefix
-			p := yy1lex.prod
+			p := yy.prod
 			ty := ""
 
-			if yy1text[1] == '$' {
-				fmt.Fprintf(yy1lex.wr, "%sval", yy)
+			if yytext[1] == '$' {
+				fmt.Fprintf(yy.wr, "yyval")
 				ty = p.Lhs.Type
 			} else {
-				n, _ := strconv.Atoi(string(yy1text[1:]))
+				n, _ := strconv.Atoi(string(yytext[1:]))
 				n--
-				fmt.Fprintf(yy1lex.wr, "%sD[%d]", yy, n)
+				fmt.Fprintf(yy.wr, "yyD[%d]", n)
 				if 0 <= n && n < len(p.Rhs) && p.Rhs[n].Type != "" {
 					ty = p.Rhs[n].Type
 				}
 			}
-			if yy1text[0] == '@' {
-				ty = yy + "p"
+			if yytext[0] == '@' {
+				ty = "yyp"
 			}
 			if ty != "" {
-				fmt.Fprintf(yy1lex.wr, ".%s", ty)
+				fmt.Fprintf(yy.wr, ".%s", ty)
 			}
 		}
 	case 1:
 		{
-			yy1lex.wr.Write(yy1text)
+			yy.wr.Write(yytext)
 		}
 	}
-	goto yy1S0
+	goto yyS0
 }

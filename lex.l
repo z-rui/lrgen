@@ -50,8 +50,8 @@ id	[A-Z_a-z][A-Z_a-z0-9]*
 <codefrag>[^{}]+	yymore()
 
 <copymode>"%%"\n	BEGIN(INITIAL)
-<copymode>.*\n		yylex.Out.Write(yytext)
+<copymode>.*\n		yy.Out.Write(yytext)
 
 <*>.|\n	{
-	yylex.Error("invalid character")
+	yy.Error("invalid character")
 }
