@@ -123,127 +123,89 @@ func (yy *yyLex) Lex(yylval *yySymType) int {
 
 yyS0:
 	yy.Pos += yy.t - yy.s
-	yy.s = yy.t
+	yy.s, yy.t = yy.t, yy.r
 	yyacc := -1
-	yy.t = yy.r
 	yyc := yy.Start
-	if yyc < '\x01' {
-		if '\x00' <= yyc {
-			goto yyS1
-		}
-	} else if yyc < '\x02' {
+	switch yyc {
+	case '\x00':
+		goto yyS1
+	case '\x01':
 		goto yyS2
-	} else if yyc <= '\x02' {
+	case '\x02':
 		goto yyS3
 	}
-
 	goto yyfin
+
 yyS1:
 	yyc = yy.next()
-	if yyc < ';' {
-		if yyc < '%' {
-			if yyc < '\x0e' {
-				if yyc < '\t' {
-					if '\x00' <= yyc {
-						goto yyS4
-					}
-				} else {
+	if yyc < '<' {
+		if yyc < '/' {
+			if yyc < ' ' {
+				if '\t' <= yyc && yyc <= '\r' {
 					goto yyS5
 				}
-			} else if yyc < ' ' {
-				goto yyS4
-			} else if yyc < '!' {
-				goto yyS5
-			} else {
-				goto yyS4
-			}
-		} else if yyc < '/' {
-			if yyc < '&' {
+			} else if yyc < '%' {
+				if yyc <= ' ' {
+					goto yyS5
+				}
+			} else if yyc <= '%' {
 				goto yyS6
-			} else {
-				goto yyS4
 			}
-		} else if yyc < '0' {
-			goto yyS7
 		} else if yyc < ':' {
-			goto yyS4
-		} else {
+			if yyc <= '/' {
+				goto yyS7
+			}
+		} else if yyc < ';' {
 			goto yyS8
+		} else {
+			goto yyS9
 		}
-	} else if yyc < '_' {
-		if yyc < '=' {
-			if yyc < '<' {
-				goto yyS9
-			} else {
+	} else if yyc < 'a' {
+		if yyc < 'A' {
+			if yyc <= '<' {
 				goto yyS10
 			}
-		} else if yyc < 'A' {
-			goto yyS4
-		} else if yyc < '[' {
+		} else if yyc < '_' {
+			if yyc <= 'Z' {
+				goto yyS11
+			}
+		} else if yyc <= '_' {
 			goto yyS11
-		} else {
-			goto yyS4
 		}
 	} else if yyc < '{' {
-		if yyc < '`' {
-			goto yyS11
-		} else if yyc < 'a' {
-			goto yyS4
-		} else {
-			goto yyS11
-		}
+		goto yyS11
 	} else if yyc < '|' {
 		goto yyS12
-	} else if yyc < '}' {
+	} else if yyc <= '|' {
 		goto yyS13
-	} else if yyc <= '\U0010ffff' {
-		goto yyS4
 	}
+	goto yyS4
 
-	goto yyfin
 yyS2:
 	yyc = yy.next()
-	if yyc < '\v' {
-		if yyc < '\n' {
-			if '\x00' <= yyc {
-				goto yyS14
-			}
-		} else {
-			goto yyS15
-		}
-	} else if yyc < '%' {
-		goto yyS14
-	} else if yyc < '&' {
+	switch yyc {
+	case '\n':
+		goto yyS15
+	case '%':
 		goto yyS16
-	} else if yyc <= '\U0010ffff' {
-		goto yyS14
 	}
+	goto yyS14
 
-	goto yyfin
 yyS3:
 	yyc = yy.next()
-	if yyc < '|' {
-		if yyc < '{' {
-			if '\x00' <= yyc {
-				goto yyS17
-			}
-		} else {
-			goto yyS18
-		}
-	} else if yyc < '}' {
-		goto yyS17
-	} else if yyc < '~' {
+	switch yyc {
+	case '{':
+		goto yyS18
+	case '}':
 		goto yyS19
-	} else if yyc <= '\U0010ffff' {
-		goto yyS17
 	}
+	goto yyS17
 
-	goto yyfin
 yyS4:
 	yyacc = 16
 	yy.t = yy.r
-
 	goto yyfin
+
 yyS5:
 	yyacc = 10
 	yy.t = yy.r
@@ -255,15 +217,15 @@ yyS5:
 	} else if yyc <= ' ' {
 		goto yyS5
 	}
-
 	goto yyfin
+
 yyS6:
 	yyacc = 16
 	yy.t = yy.r
 	yyc = yy.next()
 	if yyc < '_' {
 		if yyc < 'A' {
-			if '%' <= yyc && yyc <= '%' {
+			if yyc == '%' {
 				goto yyS20
 			}
 		} else if yyc <= 'Z' {
@@ -276,31 +238,30 @@ yyS6:
 	} else if yyc <= 'z' {
 		goto yyS21
 	}
-
 	goto yyfin
+
 yyS7:
 	yyacc = 16
 	yy.t = yy.r
 	yyc = yy.next()
-	if yyc < '/' {
-		if '*' <= yyc && yyc <= '*' {
-			goto yyS22
-		}
-	} else if yyc <= '/' {
+	switch yyc {
+	case '*':
+		goto yyS22
+	case '/':
 		goto yyS23
 	}
-
 	goto yyfin
+
 yyS8:
 	yyacc = 1
 	yy.t = yy.r
-
 	goto yyfin
+
 yyS9:
 	yyacc = 2
 	yy.t = yy.r
-
 	goto yyfin
+
 yyS10:
 	yyacc = 16
 	yy.t = yy.r
@@ -316,8 +277,8 @@ yyS10:
 	} else if yyc <= '\U0010ffff' {
 		goto yyS24
 	}
-
 	goto yyfin
+
 yyS11:
 	yyacc = 4
 	yy.t = yy.r
@@ -337,59 +298,44 @@ yyS11:
 	} else if yyc <= 'z' {
 		goto yyS11
 	}
-
 	goto yyfin
+
 yyS12:
 	yyacc = 7
 	yy.t = yy.r
-
 	goto yyfin
+
 yyS13:
 	yyacc = 3
 	yy.t = yy.r
-
 	goto yyfin
+
 yyS14:
 	yyacc = 16
 	yy.t = yy.r
 	yyc = yy.next()
-	if yyc < '\n' {
-		if '\x00' <= yyc {
-			goto yyS25
-		}
-	} else if yyc < '\v' {
+	if yyc == '\n' {
 		goto yyS15
-	} else if yyc <= '\U0010ffff' {
-		goto yyS25
 	}
+	goto yyS25
 
-	goto yyfin
 yyS15:
 	yyacc = 15
 	yy.t = yy.r
-
 	goto yyfin
+
 yyS16:
 	yyacc = 16
 	yy.t = yy.r
 	yyc = yy.next()
-	if yyc < '\v' {
-		if yyc < '\n' {
-			if '\x00' <= yyc {
-				goto yyS25
-			}
-		} else {
-			goto yyS15
-		}
-	} else if yyc < '%' {
-		goto yyS25
-	} else if yyc < '&' {
+	switch yyc {
+	case '\n':
+		goto yyS15
+	case '%':
 		goto yyS26
-	} else if yyc <= '\U0010ffff' {
-		goto yyS25
 	}
+	goto yyS25
 
-	goto yyfin
 yyS17:
 	yyacc = 13
 	yy.t = yy.r
@@ -405,23 +351,23 @@ yyS17:
 	} else if yyc <= '\U0010ffff' {
 		goto yyS17
 	}
-
 	goto yyfin
+
 yyS18:
 	yyacc = 11
 	yy.t = yy.r
-
 	goto yyfin
+
 yyS19:
 	yyacc = 12
 	yy.t = yy.r
-
 	goto yyfin
+
 yyS20:
 	yyacc = 0
 	yy.t = yy.r
-
 	goto yyfin
+
 yyS21:
 	yyacc = 5
 	yy.t = yy.r
@@ -441,21 +387,15 @@ yyS21:
 	} else if yyc <= 'z' {
 		goto yyS21
 	}
-
 	goto yyfin
+
 yyS22:
 	yyc = yy.next()
-	if yyc < '*' {
-		if '\x00' <= yyc {
-			goto yyS22
-		}
-	} else if yyc < '+' {
+	if yyc == '*' {
 		goto yyS27
-	} else if yyc <= '\U0010ffff' {
-		goto yyS22
 	}
+	goto yyS22
 
-	goto yyfin
 yyS23:
 	yyacc = 8
 	yy.t = yy.r
@@ -467,8 +407,8 @@ yyS23:
 	} else if yyc <= '\U0010ffff' {
 		goto yyS23
 	}
-
 	goto yyfin
+
 yyS24:
 	yyc = yy.next()
 	if yyc < '>' {
@@ -484,73 +424,52 @@ yyS24:
 	} else if yyc <= '\U0010ffff' {
 		goto yyS24
 	}
-
 	goto yyfin
+
 yyS25:
 	yyc = yy.next()
-	if yyc < '\n' {
-		if '\x00' <= yyc {
-			goto yyS25
-		}
-	} else if yyc < '\v' {
+	if yyc == '\n' {
 		goto yyS15
-	} else if yyc <= '\U0010ffff' {
-		goto yyS25
 	}
+	goto yyS25
 
-	goto yyfin
 yyS26:
 	yyc = yy.next()
-	if yyc < '\n' {
-		if '\x00' <= yyc {
-			goto yyS25
-		}
-	} else if yyc < '\v' {
+	if yyc == '\n' {
 		goto yyS29
-	} else if yyc <= '\U0010ffff' {
-		goto yyS25
 	}
+	goto yyS25
 
-	goto yyfin
 yyS27:
 	yyc = yy.next()
-	if yyc < '+' {
-		if yyc < '*' {
-			if '\x00' <= yyc {
-				goto yyS22
-			}
-		} else {
-			goto yyS27
-		}
-	} else if yyc < '/' {
-		goto yyS22
-	} else if yyc < '0' {
+	switch yyc {
+	case '*':
+		goto yyS27
+	case '/':
 		goto yyS30
-	} else if yyc <= '\U0010ffff' {
-		goto yyS22
 	}
+	goto yyS22
 
-	goto yyfin
 yyS28:
 	yyacc = 6
 	yy.t = yy.r
-
 	goto yyfin
+
 yyS29:
 	yyacc = 14
 	yy.t = yy.r
-
 	goto yyfin
+
 yyS30:
 	yyacc = 9
 	yy.t = yy.r
-
 	goto yyfin
 
 yyfin:
 	yy.r = yy.t // put back read-ahead bytes
 	yytext := yy.buf[yy.s:yy.r]
-	if len(yytext) == 0 {
+	yyleng := len(yytext)
+	if yyleng == 0 {
 		if yy.err != nil {
 			return 0
 		}

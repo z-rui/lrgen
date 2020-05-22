@@ -125,34 +125,24 @@ func (yy *yy1Lex) Lex(yylval *yy1SymType) int {
 
 yyS0:
 	yy.Pos += yy.t - yy.s
-	yy.s = yy.t
+	yy.s, yy.t = yy.t, yy.r
 	yyacc := -1
-	yy.t = yy.r
 	yyc := yy.Start
-	if '\x00' <= yyc && yyc <= '\x00' {
+	if yyc == '\x00' {
 		goto yyS1
 	}
-
 	goto yyfin
+
 yyS1:
 	yyc = yy.next()
-	if yyc < '%' {
-		if yyc < '$' {
-			if '\x00' <= yyc {
-				goto yyS2
-			}
-		} else {
-			goto yyS3
-		}
-	} else if yyc < '@' {
-		goto yyS2
-	} else if yyc < 'A' {
+	switch yyc {
+	case '$':
 		goto yyS3
-	} else if yyc <= '\U0010ffff' {
-		goto yyS2
+	case '@':
+		goto yyS3
 	}
+	goto yyS2
 
-	goto yyfin
 yyS2:
 	yyacc = 1
 	yy.t = yy.r
@@ -168,26 +158,26 @@ yyS2:
 	} else if yyc <= '\U0010ffff' {
 		goto yyS2
 	}
-
 	goto yyfin
+
 yyS3:
 	yyacc = 1
 	yy.t = yy.r
 	yyc = yy.next()
 	if yyc < '0' {
-		if '$' <= yyc && yyc <= '$' {
+		if yyc == '$' {
 			goto yyS4
 		}
 	} else if yyc <= '9' {
 		goto yyS5
 	}
-
 	goto yyfin
+
 yyS4:
 	yyacc = 0
 	yy.t = yy.r
-
 	goto yyfin
+
 yyS5:
 	yyacc = 0
 	yy.t = yy.r
@@ -195,13 +185,13 @@ yyS5:
 	if '0' <= yyc && yyc <= '9' {
 		goto yyS5
 	}
-
 	goto yyfin
 
 yyfin:
 	yy.r = yy.t // put back read-ahead bytes
 	yytext := yy.buf[yy.s:yy.r]
-	if len(yytext) == 0 {
+	yyleng := len(yytext)
+	if yyleng == 0 {
 		if yy.err != nil {
 			return 0
 		}
